@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#SBATCH --partition=research
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:gtx1080:1
+#SBATCH --mem=24000
+#SBATCH --time=96:0:0
+###SBATCH --nodelist=euler19
+#SBATCH --exclude=euler09
+#SBATCH -o slurm.%j.%N.out # STDOUT
+#SBATCH -e slurm.%j.%N.err # STDERR
+#SBATCH --job-name=mmdtest
+
+
+#conda 23.3.1, cuda11.8
+#conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+#install mmcv without mim, using pip instead
+#pip install "mmcv>=2.0.0rc4" -f  https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
+#pip install mmdet
+#git clone https://github.com/open-mmlab/mmdetection3d.git -b dev-1.x
+## "-b dev-1.x" means checkout to the `dev-1.x` branch.
+#cd mmdetection3d
+#pip install -v -e .
+
+
+module load anaconda/mini/23.3.1
+module load nvidia/cuda/11.8.0
+bootstrap_conda
+conda activate openmmlab
+
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth --cfg-options test_dataloader.dataset.data_prefix.pts=points_5_5_gtdepth
+
+
