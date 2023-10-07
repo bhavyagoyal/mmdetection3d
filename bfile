@@ -27,6 +27,6 @@ module load nvidia/cuda/11.8.0
 bootstrap_conda
 conda activate openmmlab
 
-CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth --cfg-options test_dataloader.dataset.data_prefix.pts=points_5_5_gtdepth
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth --cfg-options test_dataloader.dataset.data_prefix.pts=py/points_5_5_argmax
 
 
