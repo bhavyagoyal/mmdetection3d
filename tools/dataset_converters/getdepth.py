@@ -4,18 +4,18 @@ import scipy.io
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 import random
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
 GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 SBR = '5_50'
 NUM_PEAKS=10 # upto NUM_PEAKS peaks are selected
-OUTFOLDER = BASE + '../py/points_' + SBR + '_peaks/'
+OUTFOLDER = BASE + '../py/points_' + SBR + '_peaksall/'
 if not os.path.exists(OUTFOLDER):
     os.makedirs(OUTFOLDER)
 
-scenes = open(BASE + 'val_data_idx.txt').readlines()
+scenes = open(BASE + 'all_data_idx.txt').readlines()
 scenes = [x.strip() for x in scenes]
 
 metadata = scipy.io.loadmat(BASE + SUNRGBDMeta)['SUNRGBDMeta'][0]
@@ -34,21 +34,21 @@ def random_sampling(points, num_points, p=None):
     choices = np.random.choice(points.shape[0], num_points, replace=replace, p=p)
     return points[choices]
 
-def use_o3d(pts, write_text):
-    pcd = o3d.geometry.PointCloud()
-
-    # the method Vector3dVector() will convert numpy array of shape (n, 3) to Open3D format.
-    # see http://www.open3d.org/docs/release/python_api/open3d.utility.Vector3dVector.html#open3d.utility.Vector3dVector
-    pcd.points = o3d.utility.Vector3dVector(pts)
-
-    # http://www.open3d.org/docs/release/python_api/open3d.io.write_point_cloud.html#open3d.io.write_point_cloud
-    o3d.io.write_point_cloud("my_pts.ply", pcd, write_ascii=write_text)
-
-    # read ply file
-    pcd = o3d.io.read_point_cloud('my_pts.ply')
-
-    # visualize
-    o3d.visualization.draw_geometries([pcd])
+#def use_o3d(pts, write_text):
+#    pcd = o3d.geometry.PointCloud()
+#
+#    # the method Vector3dVector() will convert numpy array of shape (n, 3) to Open3D format.
+#    # see http://www.open3d.org/docs/release/python_api/open3d.utility.Vector3dVector.html#open3d.utility.Vector3dVector
+#    pcd.points = o3d.utility.Vector3dVector(pts)
+#
+#    # http://www.open3d.org/docs/release/python_api/open3d.io.write_point_cloud.html#open3d.io.write_point_cloud
+#    o3d.io.write_point_cloud("my_pts.ply", pcd, write_ascii=write_text)
+#
+#    # read ply file
+#    pcd = o3d.io.read_point_cloud('my_pts.ply')
+#
+#    # visualize
+#    o3d.visualization.draw_geometries([pcd])
 
 
 def camera_params(K):
@@ -132,6 +132,9 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
 
 for scene in scenes[start:end]:
     print(scene)
+    OUTFILE = OUTFOLDER + scene.zfill(6) +'.bin'
+    if(os.path.exists(OUTFILE)):
+        continue
     data = scipy.io.loadmat(BASE + GEN_FOLDER + 'spad_' + scene.zfill(6) + '_' + SBR +'.mat')
 
     nr, nc = data['intensity'].shape
@@ -151,8 +154,8 @@ for scene in scenes[start:end]:
     rgb = rgb.transpose(2,0,1) # HWC -> CHW
     density = None
 
-    # range_bins = data['range_bins']
-    # dist = tof2depth(range_bins*data['bin_size'])
+    #range_bins = data['range_bins']
+    #dist = tof2depth(range_bins*data['bin_size'])
 
     spad = data['spad'].toarray()
     spad = spad.reshape((nr, nc, nt), order='F')
@@ -165,20 +168,23 @@ for scene in scenes[start:end]:
     rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
 
     valid = np.all(points3d, axis=0) # only select points that have non zero locations
+
+    density = density[valid]
+    density = density/density.sum()
+
     rgb = rgb.reshape((3, -1))
     points3d, rgb = points3d.T, rgb.T
     points3d, rgb = points3d[valid,:], rgb[valid,:]
-    points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+    #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+    points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
 
 
     # .bin file should be float 32 for mmdet3d
-    density = density[valid]
-    density = density/density.sum()
-    pc_upright_depth_subsampled = random_sampling(points3d_rgb, 50000, p=density)
-    pc_upright_depth_subsampled.astype(np.float32).tofile(OUTFOLDER + scene.zfill(6) +'.bin')
+    #points3d_rgb = random_sampling(points3d_rgb, 50000, p=density)
+    points3d_rgb.astype(np.float32).tofile(OUTFILE)
     # scipy.io.savemat(BASE + GEN_FOLDER + 'spad_' + scene.zfill(6) + '_' + SBR + '_gtdepthpy.mat', {"instance": points3d_rgb})
     # cv2.imwrite(BASE + GEN_FOLDER + 'spad_' + scene.zfill(6) + '_' + SBR + '_gtdepth.png', depthmap)
-    # cv2.imwrite(BASE + GEN_FOLDER + 'spad_' + scene.zfill(6) + '_' + SBR + '_argmax.png', depthmap)
+    #cv2.imwrite(OUTFOLDER + scene.zfill(6) + '.png', depthmap)
 
 
 

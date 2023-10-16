@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
-#SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:1
-#SBATCH --mem=16000
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:2
+#SBATCH --mem=24000
 #SBATCH --time=96:0:0
 ###SBATCH --nodelist=euler19
 ###SBATCH --exclude=euler01,euler02,euler03
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=mmdt3d
-
+###SBATCH --no-requeue
 
 #conda 23.3.1, cuda11.8
 #conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia
@@ -28,16 +28,38 @@ bootstrap_conda
 conda activate openmmlab
 
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-EXPERIMENT=./work_dir_aslr_b8/votenet_8xb16_sunrgbd-3d/
-EXPERIMENT=./work_dir_py/5_10_argmax/votenet_8xb16_sunrgbd-3d/
+EXPERIMENT=./work_dir_py/5_10_peaksall_testing/votenet_8xb16_sunrgbd-3d/
+#EXPERIMENT=./work_dir_py/5_50_argmax/votenet_8xb16_sunrgbd-3d/
 CHECKPOINT=${EXPERIMENT}/epoch_36.pth
-DATAPATH=py/points_5_10_peaks
+DATAPATH=py/points_5_10_peaksall
 GPUS=2
-PORTUSED=33912
+PORTUSED=24392
 
-CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} --cfg-options test_dataloader.dataset.data_prefix.pts=${DATAPATH}
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} --cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=100000 \
+#	test_dataloader.dataset.pipeline.0.load_dim=7
 
-#CUDA_VISIBLE_DEVICES=0 python -u tools/train.py configs/votenet/votenet_8xb16_sunrgbd-3d.py --auto-scale-lr --resume --cfg-options train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} val_dataloader.dataset.data_prefix.pts=${DATAPATH} train_dataloader.batch_size=8 work_dir=${EXPERIMENT}  default_hooks.checkpoint.interval=1
+#CUDA_VISIBLE_DEVICES=0 python -u tools/train.py configs/votenet/votenet_8xb16_sunrgbd-3d.py --auto-scale-lr --resume --cfg-options train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} val_dataloader.dataset.data_prefix.pts=${DATAPATH} train_dataloader.batch_size=8 work_dir=${EXPERIMENT}  default_hooks.checkpoint.interval=1 train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_short.pkl' val_dataloader.dataset.ann_file='sunrgbd_infos_val_short.pkl'
 
-#PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} val_dataloader.dataset.data_prefix.pts=${DATAPATH} train_dataloader.batch_size=8 work_dir=${EXPERIMENT} default_hooks.checkpoint.interval=1
 
+PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
+	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
+	val_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	train_dataloader.batch_size=8 \
+	work_dir=${EXPERIMENT} \
+	default_hooks.checkpoint.interval=1 \
+	train_dataloader.dataset.dataset.pipeline.4.num_points=100000 \
+	val_dataloader.dataset.pipeline.1.transforms.2.num_points=100000 \
+	train_dataloader.dataset.dataset.pipeline.0.load_dim=7 \
+	val_dataloader.dataset.pipeline.0.load_dim=7 \
+	train_dataloader.num_workers=8
+
+
+#	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_short.pkl' \
+#	val_dataloader.dataset.ann_file='sunrgbd_infos_val_short.pkl'
+
+
+
+
+ 
