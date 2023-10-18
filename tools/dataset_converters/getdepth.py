@@ -9,11 +9,8 @@ import random
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
 GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_50'
+SBR = '5_10'
 NUM_PEAKS=10 # upto NUM_PEAKS peaks are selected
-OUTFOLDER = BASE + '../py/points_' + SBR + '_peaksall/'
-if not os.path.exists(OUTFOLDER):
-    os.makedirs(OUTFOLDER)
 
 scenes = open(BASE + 'all_data_idx.txt').readlines()
 scenes = [x.strip() for x in scenes]
@@ -24,6 +21,11 @@ start, end = 0, len(scenes)
 if(len(sys.argv)>1):
     start = int(sys.argv[1])
     end = int(sys.argv[2])
+
+
+OUTFOLDER = BASE + '../py/points_' + SBR + '_argmax_randomtie/'+str(start)+'/'
+if not os.path.exists(OUTFOLDER):
+    os.makedirs(OUTFOLDER)
 
 C = 3e8
 def tof2depth(tof):
@@ -70,6 +72,12 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt):
         for jj in range(1, nc+1):
             peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS]
             allpeaks[ii-1,jj-1,:len(peaks)]=peaks
+            #if(ii==nr/2):
+            #    plt.clf()
+            #    plt.bar(range(nt), spad[ii-1, jj-1,:], width=4)
+            #    plt.scatter(peaks, np.zeros_like(peaks), c='r')
+            #    plt.text(100,1, str(len(peaks)) + ' ' + str(peaks) + ' ' + str(spad[ii-1, jj-1, peaks]))
+            #    plt.savefig('plots_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '.png')
     allpeaks = allpeaks.astype(int)
 
     density = spad[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], allpeaks]
@@ -130,6 +138,17 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
     points3d = np.matmul(Rtilt, points3d)
     return points3d
 
+def argmaxrandomtie(spad):
+    maxval = spad.max(axis=-1, keepdims=True)
+    maxmatrix = spad == maxval
+    
+    spadmax = np.zeros(spad.shape[:2])
+    for i in range(spad.shape[0]):
+        for j in range(spad.shape[1]):
+            spadmax = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
+    return spadmax
+
+
 for scene in scenes[start:end]:
     print(scene)
     OUTFILE = OUTFOLDER + scene.zfill(6) +'.bin'
@@ -160,23 +179,24 @@ for scene in scenes[start:end]:
     spad = data['spad'].toarray()
     spad = spad.reshape((nr, nc, nt), order='F')
     #spad = spad.argmax(-1)
-    #dist = tof2depth(spad*data['bin_size'])
+    spad = argmaxrandomtie(spad)
+    dist = tof2depth(spad*data['bin_size'])
 
-    #depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-    #points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-    points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt)
-    rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
+    depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+    points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+    #points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt)
+    #rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
 
     valid = np.all(points3d, axis=0) # only select points that have non zero locations
 
-    density = density[valid]
-    density = density/density.sum()
+    #density = density[valid]
+    #density = density/density.sum()
 
     rgb = rgb.reshape((3, -1))
     points3d, rgb = points3d.T, rgb.T
     points3d, rgb = points3d[valid,:], rgb[valid,:]
-    #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
-    points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
+    points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+    #points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
 
 
     # .bin file should be float 32 for mmdet3d
