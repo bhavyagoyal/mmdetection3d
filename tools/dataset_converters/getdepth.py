@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 import random
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_10'
+SBR = '5_100'
 NUM_PEAKS=10 # upto NUM_PEAKS peaks are selected
 
 scenes = open(BASE + 'all_data_idx.txt').readlines()
@@ -145,7 +145,7 @@ def argmaxrandomtie(spad):
     spadmax = np.zeros(spad.shape[:2])
     for i in range(spad.shape[0]):
         for j in range(spad.shape[1]):
-            spadmax = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
+            spadmax[i,j] = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
     return spadmax
 
 
