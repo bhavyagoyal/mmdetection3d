@@ -28,10 +28,10 @@ bootstrap_conda
 conda activate openmmlab
 
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-EXPERIMENT=./work_dir_py/5_5_gtdepthall_points5000/votenet_8xb16_sunrgbd-3d/
+EXPERIMENT=./work_dir_py/5_50_peaksall_points10000+density+weighted+masked/votenet_8xb16_sunrgbd-3d/
 #EXPERIMENT=./work_dir_py/5_50_argmax/votenet_8xb16_sunrgbd-3d/
 CHECKPOINT=${EXPERIMENT}/epoch_36.pth
-DATAPATH=py/points_5_5_gtdeptall
+DATAPATH=py/points_5_50_peaksall
 GPUS=2
 PORTUSED=$(( $RANDOM + 10000 ))
 
@@ -44,31 +44,22 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_dataloader.batch_size=8 \
 	work_dir=${EXPERIMENT} \
 	default_hooks.checkpoint.interval=1 \
-	train_dataloader.dataset.dataset.pipeline.4.num_points=5000 \
-	val_dataloader.dataset.pipeline.1.transforms.2.num_points=5000 \
+	train_dataloader.dataset.dataset.pipeline.4.num_points=10000 \
+	val_dataloader.dataset.pipeline.1.transforms.2.num_points=10000 \
+	train_dataloader.num_workers=8 \
+	train_dataloader.dataset.dataset.pipeline.0.load_dim=7 \
+	val_dataloader.dataset.pipeline.0.load_dim=7 \
+	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,3]" \
+	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3]" \
+	model.backbone.in_channels=5 \
+	train_dataloader.dataset.dataset.pipeline.4.p=True \
+	val_dataloader.dataset.pipeline.1.transforms.2.p=True \
 
 
 
 
 
-#	train_dataloader.dataset.dataset.pipeline.0.load_dim=7 \
-#	val_dataloader.dataset.pipeline.0.load_dim=7 \
-#	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,3]" \
-#	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3]" \
-#	model.backbone.in_channels=5 \
-#
-#
-#
-#
-#
-#	train_dataloader.dataset.dataset.pipeline.4.p=True \
-#	val_dataloader.dataset.pipeline.1.transforms.2.p=True \
-#	train_dataloader.num_workers=8 \
-#
-
-
-
-
+	#model.backbone.sa_cfg.pool_mod='avgmax' \
 #	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_short.pkl' \
 #	val_dataloader.dataset.ann_file='sunrgbd_infos_val_short.pkl'
 

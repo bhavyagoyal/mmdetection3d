@@ -121,6 +121,10 @@ class PointNet2SASSG(BasePointNet):
         for i in range(self.num_sa):
             cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
+            if(i==0):
+                if(sa_features[0].shape[1]==2):
+                    attn = torch.take(sa_features[0][:,1,:], cur_indices.long())
+                    cur_features = cur_features*attn[:,None,:]*10000
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(

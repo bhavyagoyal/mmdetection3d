@@ -60,7 +60,7 @@ class BasePointSAModule(nn.Module):
         super(BasePointSAModule, self).__init__()
 
         assert len(radii) == len(sample_nums) == len(mlp_channels)
-        assert pool_mod in ['max', 'avg']
+        assert pool_mod in ['max', 'avg', 'avgmax']
         assert isinstance(fps_mod, list) or isinstance(fps_mod, tuple)
         assert isinstance(fps_sample_range_list, list) or isinstance(
             fps_sample_range_list, tuple)
@@ -166,6 +166,11 @@ class BasePointSAModule(nn.Module):
         elif self.pool_mod == 'avg':
             # (B, C, N, 1)
             new_features = F.avg_pool2d(
+                features, kernel_size=[1, features.size(3)])
+        elif self.pool_mod == 'avgmax':
+            # (B, C, N, 1)
+            new_features = F.avg_pool2d(
+                features, kernel_size=[1, features.size(3)]) + F.max_pool2d(
                 features, kernel_size=[1, features.size(3)])
         else:
             raise NotImplementedError
