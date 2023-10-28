@@ -7,7 +7,7 @@ do
         BEGIN=$(($i*$EACH+$START))
         echo $BEGIN
 	python -u getdepth.py $BEGIN $(($BEGIN+$EACH)) &
-        sleep 10
+        sleep 5
 done
 
 #python -u getdepth.py $BEGIN $(($BEGIN+$EACH)) &

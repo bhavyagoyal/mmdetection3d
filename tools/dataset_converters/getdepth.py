@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 import random
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_100'
-NUM_PEAKS=10 # upto NUM_PEAKS peaks are selected
+SBR = '5_50'
+NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
+NUM_PEAKS_START = 150
 
 scenes = open(BASE + 'all_data_idx.txt').readlines()
 scenes = [x.strip() for x in scenes]
@@ -23,7 +24,7 @@ if(len(sys.argv)>1):
     end = int(sys.argv[2])
 
 
-OUTFOLDER = BASE + '../py/points_' + SBR + '_argmax_randomtie/'+str(start)+'/'
+OUTFOLDER = BASE + '../py/points_' + SBR + '_filteringpeaks/'+str(start)+'/'
 if not os.path.exists(OUTFOLDER):
     os.makedirs(OUTFOLDER)
 
@@ -35,6 +36,8 @@ def random_sampling(points, num_points, p=None):
     replace = (points.shape[0] < num_points)
     choices = np.random.choice(points.shape[0], num_points, replace=replace, p=p)
     return points[choices]
+
+pulse = [[[0.0000, 0.0000, 0.0000, 0.0000, 0.0001, 0.0013, 0.0105, 0.0520, 0.1528, 0.2659, 0.2743, 0.1676, 0.0607, 0.0130, 0.0017, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]
 
 #def use_o3d(pts, write_text):
 #    pcd = o3d.geometry.PointCloud()
@@ -58,7 +61,7 @@ def camera_params(K):
     fx, fy = K[0,0], K[1,1]
     return cx, cy, fx, fy
 
-def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt):
+def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity):
     xx = np.linspace(1, nc, nc)
     yy = np.linspace(1, nr, nr)
     x, y = np.meshgrid(xx, yy)
@@ -66,24 +69,57 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt):
     xa = (x - cx)/fx
     ya = (y - cy)/fy
     xa, ya = xa[:,:,np.newaxis], ya[:,:,np.newaxis]
+    spad = scipy.signal.convolve(spad, pulse, mode='same')
 
-    allpeaks = np.zeros((nr, nc, NUM_PEAKS))
+    allpeaks = np.zeros((nr, nc, NUM_PEAKS_START))
     for ii in range(1, nr+1):
         for jj in range(1, nc+1):
-            peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS]
+            #peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS_START]
+            peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.3)[0][:NUM_PEAKS_START]
             allpeaks[ii-1,jj-1,:len(peaks)]=peaks
-            #if(ii==nr/2):
-            #    plt.clf()
-            #    plt.bar(range(nt), spad[ii-1, jj-1,:], width=4)
-            #    plt.scatter(peaks, np.zeros_like(peaks), c='r')
-            #    plt.text(100,1, str(len(peaks)) + ' ' + str(peaks) + ' ' + str(spad[ii-1, jj-1, peaks]))
-            #    plt.savefig('plots_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '.png')
+
     allpeaks = allpeaks.astype(int)
 
     density = spad[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], allpeaks]
-    totaldensity = density.sum(-1)
-    totaldensity[totaldensity<1]=1
-    density = density/totaldensity[:,:,np.newaxis]
+
+    dp = np.stack([density, allpeaks])
+    dpindex = dp[0,:,:,:].argsort(axis=-1)
+    dpindex = dpindex[:,:,::-1]
+ 
+    density = dp[0,:,:,:]
+    density = density[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
+    allpeaks = dp[1,:,:,:]
+    allpeaks = allpeaks[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
+
+    density = density[:,:,:NUM_PEAKS]
+    allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
+
+    maxdensity = density.max(axis=-1, keepdims=True)
+    removepeaks = density<(maxdensity-0.5)
+    density[removepeaks]=0.
+    allpeaks[removepeaks]=0
+
+    totaldensity = density.sum(-1, keepdims=True)
+    totaldensity[totaldensity<1e-9]=1
+    density = density/totaldensity
+
+    #for ii in range(nr//2+10, nr//2+12):
+    #    for jj in range(1, nc+1):
+    #        plt.close()
+    #        plt.figure().set_figwidth(24)
+    #        plt.bar(range(nt), spad[ii-1, jj-1,:], width=0.9)
+    #        rbin = rbins[ii-1,jj-1]-1
+    #        peaks = allpeaks[ii-1, jj-1,:]
+    #        plt.scatter([rbin], [spad[ii-1, jj-1, rbin]], c='g', alpha=0.3)
+    #        plt.scatter(peaks, [spad[ii-1, jj-1, peaks]], c='r', alpha=0.7)
+    #        plt.text(100, 0, str(rbin) + " " + str(spad[ii-1, jj-1].max()) + " " + str(peaks) + " " + str(density[ii-1,jj-1]) )
+    #        plt.savefig('plots_filteringpeaks_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
+    #        plt.close()
+    #        inten = intensity.copy()
+    #        inten[ii-1, :]=1
+    #        inten[:, jj-1]=1
+    #        plt.imshow(inten)
+    #        plt.savefig('plots_filteringpeaks_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
 
     dists = tof2depth(allpeaks*bin_size)
     depths = dists/(xa**2 + ya**2 + 1)**0.5
@@ -138,11 +174,15 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
     points3d = np.matmul(Rtilt, points3d)
     return points3d
 
+def argmaxfiltering(spad):
+    spaddensity = scipy.signal.convolve(spad, pulse, mode='same')
+    return spaddensity.argmax(-1)
+
 def argmaxrandomtie(spad):
     maxval = spad.max(axis=-1, keepdims=True)
     maxmatrix = spad == maxval
     
-    spadmax = np.zeros(spad.shape[:2])
+    spadmax = np.zeros(spad.shape[:2], dtype=np.int32)
     for i in range(spad.shape[0]):
         for j in range(spad.shape[1]):
             spadmax[i,j] = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
@@ -173,30 +213,55 @@ for scene in scenes[start:end]:
     rgb = rgb.transpose(2,0,1) # HWC -> CHW
     density = None
 
+    # Subtract 1 from range bins to get the right bin index in python
+    # as matlab indexes it from 1
+    # for distance calculation, this is fine
     #range_bins = data['range_bins']
     #dist = tof2depth(range_bins*data['bin_size'])
 
     spad = data['spad'].toarray()
     spad = spad.reshape((nr, nc, nt), order='F')
+    #spadcopy = scipy.signal.convolve(spad, pulse, mode='same')
+    #spadcopy = spad.copy()
     #spad = spad.argmax(-1)
-    spad = argmaxrandomtie(spad)
-    dist = tof2depth(spad*data['bin_size'])
+    #spad = argmaxrandomtie(spad)
+    #spad = argmaxfiltering(spad)
 
-    depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-    points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-    #points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt)
-    #rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
+    #for ii in range(nr//2+10, nr//2+15):
+    #    for jj in range(1, nc+1):
+    #        plt.close()
+    #        plt.figure().set_figwidth(24)
+    #        plt.bar(range(nt), spadcopy[ii-1, jj-1,:], width=0.9)
+    #        rbin = data['range_bins'][ii-1,jj-1]-1
+    #        selected = spad[ii-1, jj-1]
+    #        plt.scatter([rbin], [spadcopy[ii-1, jj-1, rbin]], c='g', alpha=0.3)
+    #        plt.scatter([selected], [spadcopy[ii-1, jj-1, selected]], c='r', alpha=0.7)
+    #        plt.text(100, 1, str(rbin) + " " + str(spadcopy[ii-1, jj-1, :].max()) + " " + str(selected) + str(spadcopy[ii-1, jj-1, selected]) + " " + str(gtvalid[ii-1,jj-1]) + " " + str(data['intensity'][ii-1,jj-1]))
+    #        plt.savefig('plots_argmax_filtering_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
+    #        plt.close()
+    #        inten = data['intensity'].copy()
+    #        inten[ii-1, :]=1
+    #        inten[:, jj-1]=1
+    #        plt.imshow(inten)
+    #        plt.savefig('plots_argmax_filtering_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
+
+    #dist = tof2depth(spad*data['bin_size'])
+
+    #depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+    #points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+    points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
+    rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
 
     valid = np.all(points3d, axis=0) # only select points that have non zero locations
 
-    #density = density[valid]
-    #density = density/density.sum()
+    density = density[valid]
+    density = density/density.sum()
 
     rgb = rgb.reshape((3, -1))
     points3d, rgb = points3d.T, rgb.T
     points3d, rgb = points3d[valid,:], rgb[valid,:]
-    points3d_rgb = np.concatenate([points3d, rgb], axis=1)
-    #points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
+    #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+    points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
 
 
     # .bin file should be float 32 for mmdet3d
@@ -210,16 +275,6 @@ for scene in scenes[start:end]:
 
 
     # # pts = []
-    # for ii in range(nr//2, nr+1):
-    #     for jj in range(1, nc+1):
-    #         sp = spad[ii-1, jj-1,:]
-    #         peaks = scipy.signal.find_peaks(sp, distance=10, height=2)[0]
-    #         print(peaks)
-    #         plt.clf()
-    #         plt.bar(range(nt), sp, width=4)
-    #         plt.scatter(peaks, np.zeros_like(peaks), c='r')
-    #         plt.text(100,1, str(len(peaks)) + ' ' + str(peaks) + ' ' + str(sp[peaks]))
-    #         plt.savefig('plots_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '.png')
     #         # x, y = jj-cx, ii-cy
     #         # dd = dist[ii-1,jj-1]
     #         # depth = dd / ( ( (x/fx)**2 + (y/fy)**2 + 1 )**0.5 )
