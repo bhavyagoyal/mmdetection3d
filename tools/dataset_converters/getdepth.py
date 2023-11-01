@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 import random
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_100'
+SBR = '5_50'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 150
 
@@ -24,7 +24,7 @@ if(len(sys.argv)>1):
     end = int(sys.argv[2])
 
 
-OUTFOLDER = BASE + '../py/points_' + SBR + '_filteringpeaks/'+str(start)+'/'
+OUTFOLDER = BASE + '../secondpy/points_' + SBR + '_argmax_probs/'+str(start)+'/'
 if not os.path.exists(OUTFOLDER):
     os.makedirs(OUTFOLDER)
 
@@ -176,7 +176,7 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
 
 def argmaxfiltering(spad):
     spaddensity = scipy.signal.convolve(spad, pulse, mode='same')
-    return spaddensity.argmax(-1)
+    return spaddensity.argmax(-1), spaddensity.max(-1)
 
 def argmaxrandomtie(spad):
     maxval = spad.max(axis=-1, keepdims=True)
@@ -225,7 +225,8 @@ for scene in scenes[start:end]:
     #spadcopy = spad.copy()
     #spad = spad.argmax(-1)
     #spad = argmaxrandomtie(spad)
-    #spad = argmaxfiltering(spad)
+    spad, density = argmaxfiltering(spad)
+    density = density.reshape(-1)
 
     #for ii in range(nr//2+10, nr//2+15):
     #    for jj in range(1, nc+1):
@@ -245,12 +246,12 @@ for scene in scenes[start:end]:
     #        plt.imshow(inten)
     #        plt.savefig('plots_argmax_filtering_' + SBR + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
 
-    #dist = tof2depth(spad*data['bin_size'])
+    dist = tof2depth(spad*data['bin_size'])
 
-    #depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-    #points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-    points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
-    rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
+    depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+    points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+    #points3d, density = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
+    #rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
 
     valid = np.all(points3d, axis=0) # only select points that have non zero locations
 
