@@ -24,7 +24,7 @@ if(len(sys.argv)>1):
     end = int(sys.argv[2])
 
 
-OUTFOLDER = BASE + '../secondpy/points_' + SBR + '_argmax_probs/'+str(start)+'/'
+OUTFOLDER = BASE + '../secondpy/points_' + SBR + '_argmax_probs/'
 if not os.path.exists(OUTFOLDER):
     os.makedirs(OUTFOLDER)
 
