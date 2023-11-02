@@ -592,6 +592,7 @@ class LoadPointsFromFile(BaseTransform):
                  shift_height: bool = False,
                  use_color: bool = False,
                  norm_intensity: bool = False,
+                 norm_probabilities: bool = False,
                  norm_elongation: bool = False,
                  backend_args: Optional[dict] = None) -> None:
         self.shift_height = shift_height
@@ -606,6 +607,7 @@ class LoadPointsFromFile(BaseTransform):
         self.load_dim = load_dim
         self.use_dim = use_dim
         self.norm_intensity = norm_intensity
+        self.norm_probabilities = norm_probabilities
         self.norm_elongation = norm_elongation
         self.backend_args = backend_args
 
@@ -646,6 +648,10 @@ class LoadPointsFromFile(BaseTransform):
         points = self._load_points(pts_file_path)
         points = points.reshape(-1, self.load_dim)
         points = points[:, self.use_dim]
+        if self.norm_probabilities:
+            assert len(self.use_dim) >= 4, \
+                f'When using probabilities norm, expect used dimensions >= 4, got {len(self.use_dim)}'  # noqa: E501
+            points[:, 3] /= points[:, 3].max()
         if self.norm_intensity:
             assert len(self.use_dim) >= 4, \
                 f'When using intensity norm, expect used dimensions >= 4, got {len(self.use_dim)}'  # noqa: E501

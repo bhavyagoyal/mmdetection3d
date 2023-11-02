@@ -8,7 +8,7 @@ from mmdet3d.registry import MODELS
 from mmdet3d.structures import Det3DDataSample
 from ..test_time_augs import merge_aug_bboxes_3d
 from .single_stage import SingleStage3DDetector
-
+import numpy as np
 
 @MODELS.register_module()
 class VoteNet(SingleStage3DDetector):
@@ -63,6 +63,11 @@ class VoteNet(SingleStage3DDetector):
             dict[str, Tensor]: A dictionary of loss components.
         """
         feat_dict = self.extract_feat(batch_inputs_dict)
+        #print(feat_dict.keys(), feat_dict['sa_xyz'][0].shape, feat_dict['sa_xyz'][1].shape)
+        #for x in range(feat_dict['sa_xyz'][0].shape[0]):
+        #    feat_dict['sa_xyz'][1][x].cpu().numpy().astype(np.float32).tofile('pointscheck/gtdepthall-noise025-points50000-fps-1-' + str(x) + '.bin')
+        #    feat_dict['sa_xyz'][0][x].cpu().numpy().astype(np.float32).tofile('pointscheck/gtdepthall-noise025-points50000-fps-0-' + str(x) + '.bin')
+        #exit(0)
         points = batch_inputs_dict['points']
         losses = self.bbox_head.loss(points, feat_dict, batch_data_samples,
                                      **kwargs)
