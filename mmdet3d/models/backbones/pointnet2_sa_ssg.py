@@ -35,6 +35,7 @@ class PointNet2SASSG(BasePointNet):
 
     def __init__(self,
                  in_channels: int,
+                 sa_mask: bool = False,
                  num_points: Sequence[int] = (2048, 1024, 512, 256),
                  radius: Sequence[float] = (0.2, 0.4, 0.8, 1.2),
                  num_samples: Sequence[int] = (64, 32, 16, 16),
@@ -54,6 +55,7 @@ class PointNet2SASSG(BasePointNet):
         super().__init__(init_cfg=init_cfg)
         self.num_sa = len(sa_channels)
         self.num_fp = len(fp_channels)
+        self.sa_mask = sa_mask
 
         assert len(num_points) == len(radius) == len(num_samples) == len(
             sa_channels)
@@ -121,10 +123,9 @@ class PointNet2SASSG(BasePointNet):
         for i in range(self.num_sa):
             cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
-            if(i==0):
-                if(sa_features[0].shape[1]==2):
-                    attn = torch.take(sa_features[0][:,1,:], cur_indices.long())
-                    cur_features = cur_features*attn[:,None,:]*10000
+            if(self.sa_mask):
+                attn = torch.take(sa_features[0][:,1,:], cur_indices.long())
+                cur_features = cur_features*attn[:,None,:]
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(
