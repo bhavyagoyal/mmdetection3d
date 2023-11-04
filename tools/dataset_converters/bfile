@@ -11,8 +11,8 @@
 #SBATCH --no-requeue
 
 
-module load anaconda/mini/23.3.1
-bootstrap_conda
-conda activate openmmlab
+#module load anaconda/mini/23.3.1
+#bootstrap_conda
+#conda activate openmmlab
 
-./run.sh 0 10400 10400
+./run.sh 0 10400 400 
