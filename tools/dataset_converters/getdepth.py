@@ -1,15 +1,16 @@
 import cv2, sys, os
 import scipy.io
+import scipy.signal
 # import open3d as o3d
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 import random
-BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
+BASE = "/nobackup2/bhavya/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
 GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_50'
+SBR = '5_1'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 150
 
@@ -207,6 +208,9 @@ for scene in scenes[start:end]:
     # Simulation script for histograms inpaints NAN depths
     # but I am ignoring those points
     gtdepth = cv2.imread(BASE + depthpath, cv2.IMREAD_UNCHANGED)
+    if(gtdepth is None):
+        print('could not load depth image')
+        exit(0)
     gtvalid = gtdepth>0 
     rgb = cv2.imread(BASE + rgbpath, cv2.IMREAD_UNCHANGED)/255.
     rgb = rgb[:, :, ::-1]  # BGR -> RGB
