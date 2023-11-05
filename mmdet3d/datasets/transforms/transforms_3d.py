@@ -1030,13 +1030,13 @@ class PointSample(BaseTransform):
 
     def __init__(self,
                  num_points: int,
-                 p: bool = False,
+                 probability_sampling: bool = False,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
         self.num_points = num_points
         self.sample_range = sample_range
         self.replace = replace
-        self.p = p
+        self.probability_sampling = probability_sampling
 
     def _points_random_sampling(
         self,
@@ -1086,11 +1086,16 @@ class PointSample(BaseTransform):
                     far_inds, num_samples, replace=False)
             point_range = near_inds
             num_samples -= len(far_inds)
-        if(self.p):
+        if(self.probability_sampling):
             # converting to np array to avoid floating point precision errors
             # which makes sum of probability not 1
             probs = np.array(points.tensor[:,4])
+            probs = probs/probs.sum(-1, keepdims=True)
             choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
+            # sort points in decreasing order of probabilities
+            # and restrict FPS to select from first few points
+            negprobs = -1*probs[choices]
+            choices = choices[negprobs.argsort()]
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
         if sample_range is not None and not replace:

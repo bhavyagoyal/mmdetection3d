@@ -39,6 +39,7 @@ class PointNet2SASSG(BasePointNet):
                  num_points: Sequence[int] = (2048, 1024, 512, 256),
                  radius: Sequence[float] = (0.2, 0.4, 0.8, 1.2),
                  num_samples: Sequence[int] = (64, 32, 16, 16),
+                 fps_sample_range_list: List[int] = None,
                  sa_channels: Sequence[Sequence[int]] = ((64, 64, 128),
                                                          (128, 128, 256),
                                                          (128, 128, 256),
@@ -77,6 +78,7 @@ class PointNet2SASSG(BasePointNet):
                     num_sample=num_samples[sa_index],
                     mlp_channels=cur_sa_mlps,
                     norm_cfg=norm_cfg,
+                    fps_sample_range_list = [-1] if fps_sample_range_list is None else [fps_sample_range_list[sa_index]],
                     cfg=sa_cfg))
             skip_channel_list.append(sa_out_channel)
             sa_in_channel = sa_out_channel
