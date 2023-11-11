@@ -8,6 +8,7 @@ from mmdet3d.registry import MODELS
 from mmdet3d.utils import ConfigType, OptConfigType, OptMultiConfig
 from ...structures.det3d_data_sample import OptSampleList, SampleList
 from .base import Base3DDetector
+from mmcv.ops.ball_query import ball_query
 
 
 @MODELS.register_module()
@@ -41,6 +42,7 @@ class SingleStage3DDetector(Base3DDetector):
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
+                 weighted_score: bool = False,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -52,6 +54,7 @@ class SingleStage3DDetector(Base3DDetector):
         self.bbox_head = MODELS.build(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.weighted_score = weighted_score
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
@@ -157,6 +160,24 @@ class SingleStage3DDetector(Base3DDetector):
         """
         points = batch_inputs_dict['points']
         stack_points = torch.stack(points)
+
+        if(self.weighted_score):
+            points_xyz = stack_points[:,:,:3].detach().contiguous()
+            points_probs = stack_points[:,:,4].detach().contiguous()
+            MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
+            ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS+1, points_xyz, points_xyz).long()
+            ball_idxs = ball_idxs[:,:,1:]
+            nonzero_ball_idxs = (ball_idxs!=0)
+            points_probs = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
+            neighbor_probs = torch.gather(points_probs, 1, ball_idxs) 
+            neighbor_probs = neighbor_probs*nonzero_ball_idxs
+            neighbor_probs = neighbor_probs.mean(-1)
+
+            choices = (-1*neighbor_probs).argsort()
+            #choices = choices[:,:self.backbone.SA_modules[0].fps_sample_range_list[0]] 
+            stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(5))
+            #stack_points = stack_points[:,:-10000]
+
         x = self.backbone(stack_points)
         if self.with_neck:
             x = self.neck(x)

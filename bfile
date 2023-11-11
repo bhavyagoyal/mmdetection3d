@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=24
-#SBATCH --gres=gpu:gtx1080:2
-#SBATCH --mem=24000
+#SBATCH --gres=gpu:m10:4
+#SBATCH --mem=36000
 #SBATCH --time=96:0:0
 ###SBATCH --nodelist=euler19
 ###SBATCH --exclude=euler01,euler02,euler03
@@ -28,12 +28,12 @@ bootstrap_conda
 conda activate openmmlab
 
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-#EXPERIMENT=./work_dir_py/5_50_filteringpeaks_points10000+density+weighted+masked_featavgmax/votenet_8xb16_sunrgbd-3d/
-EXPERIMENT=./work_dir_py/5_50_argmax_probs_points50000+densitynormed_samasked/votenet_8xb16_sunrgbd-3d/
+#EXPERIMENT=./work_dir_py/5_100_argmax_probs_points2048/votenet_8xb16_sunrgbd-3d/
+EXPERIMENT=./work_dir_py/5_100_filteringpeaks_points50000+densitynormed+combscore10000/votenet_8xb16_sunrgbd-3d/
 CHECKPOINT=${EXPERIMENT}/epoch_36.pth
 DATAPATH=py/points_5_5_gtdepthall
-DATAPATH=secondpy/points_5_50_argmax_probs
-GPUS=2
+DATAPATH=py/points_5_100_filteringpeaks
+GPUS=4
 PORTUSED=$(( $RANDOM + 10000 ))
 
 
@@ -55,18 +55,21 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,3]" \
 	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3]" \
 	model.backbone.in_channels=5 \
-	model.backbone.sa_mask=True \
-
-
-#	val_dataloader.dataset.pipeline.1.transforms.2.p=True \
-#	train_dataloader.dataset.dataset.pipeline.4.p=True \
+	model.backbone.fps_sample_range_list="[10000,-1,-1,-1]" \
+	model.weighted_score=True \
 
 
 
 
-# TODO: use flags for setting mask for point net
 
 
+
+
+
+	#val_dataloader.dataset.pipeline.1.transforms.2.probability_sampling=True \
+	#train_dataloader.dataset.dataset.pipeline.4.probability_sampling=True \
+
+	#model.backbone.sa_mask=True \
 #	model.backbone.sa_cfg.pool_mod='avgmax' \
 #	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_short.pkl' \
 #	val_dataloader.dataset.ann_file='sunrgbd_infos_val_short.pkl'

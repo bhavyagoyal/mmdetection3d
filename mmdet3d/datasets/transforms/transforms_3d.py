@@ -1087,6 +1087,7 @@ class PointSample(BaseTransform):
             point_range = near_inds
             num_samples -= len(far_inds)
         if(self.probability_sampling):
+                
             # converting to np array to avoid floating point precision errors
             # which makes sum of probability not 1
             probs = np.array(points.tensor[:,4])
