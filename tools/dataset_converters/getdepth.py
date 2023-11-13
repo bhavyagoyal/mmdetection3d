@@ -7,10 +7,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 import random
-BASE = "/nobackup2/bhavya/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
+GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-SBR = '5_1'
+SBR = '1_100'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 150
 
@@ -25,7 +25,8 @@ if(len(sys.argv)>1):
     end = int(sys.argv[2])
 
 
-OUTFOLDER = BASE + '../secondpy/points_' + SBR + '_argmax_probs/'
+#OUTFOLDER = BASE + '../py/points_' + SBR + '_argmax_probs/'
+OUTFOLDER = '/scratch/bhavya/py/points_' + SBR + '_argmax_probs/'
 if not os.path.exists(OUTFOLDER):
     os.makedirs(OUTFOLDER)
 

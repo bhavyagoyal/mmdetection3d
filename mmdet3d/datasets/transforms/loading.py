@@ -8,7 +8,7 @@ import numpy as np
 from mmcv.transforms import LoadImageFromFile
 from mmcv.transforms.base import BaseTransform
 from mmdet.datasets.transforms import LoadAnnotations
-from mmengine.fileio import get
+from mmengine.fileio import get, exists, join_path
 
 from mmdet3d.registry import TRANSFORMS
 from mmdet3d.structures.bbox_3d import get_box_type
@@ -588,6 +588,7 @@ class LoadPointsFromFile(BaseTransform):
     def __init__(self,
                  coord_type: str,
                  load_dim: int = 6,
+                 cache_prefix: str = None,
                  use_dim: Union[int, List[int]] = [0, 1, 2],
                  shift_height: bool = False,
                  use_color: bool = False,
@@ -605,6 +606,7 @@ class LoadPointsFromFile(BaseTransform):
 
         self.coord_type = coord_type
         self.load_dim = load_dim
+        self.cache_prefix = cache_prefix
         self.use_dim = use_dim
         self.norm_intensity = norm_intensity
         self.norm_probabilities = norm_probabilities
@@ -621,8 +623,13 @@ class LoadPointsFromFile(BaseTransform):
             np.ndarray: An array containing point clouds data.
         """
         try:
-            pts_bytes = get(pts_filename, backend_args=self.backend_args)
-            points = np.frombuffer(pts_bytes, dtype=np.float32)
+            pts_filename_cached = join_path(self.cache_prefix, pts_filename, backend_args=self.backend_args)
+            if(self.cache_prefix and exists(pts_filename_cached, backend_args=self.backend_args)):
+                pts_bytes = get(pts_filename_cached, backend_args=self.backend_args)
+                points = np.frombuffer(pts_bytes, dtype=np.float32)
+            else:
+                pts_bytes = get(pts_filename, backend_args=self.backend_args)
+                points = np.frombuffer(pts_bytes, dtype=np.float32)
         except ConnectionError:
             mmengine.check_file_exist(pts_filename)
             if pts_filename.endswith('.npy'):

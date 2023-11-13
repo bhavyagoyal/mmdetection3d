@@ -165,8 +165,8 @@ class SingleStage3DDetector(Base3DDetector):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,4].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
-            ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS+1, points_xyz, points_xyz).long()
-            ball_idxs = ball_idxs[:,:,1:]
+            ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
+            #ball_idxs = ball_idxs[:,:,1:]
             nonzero_ball_idxs = (ball_idxs!=0)
             points_probs = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
             neighbor_probs = torch.gather(points_probs, 1, ball_idxs) 

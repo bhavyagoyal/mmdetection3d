@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32000
+#SBATCH --cpus-per-task=40
+#SBATCH --mem=400000
 #SBATCH --time=48:0:0
-###SBATCH --nodelist=euler141
+#SBATCH --nodelist=euler141
 ###SBATCH --exclude=euler09
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -11,8 +11,8 @@
 #SBATCH --no-requeue
 
 
-#module load anaconda/mini/23.3.1
-#bootstrap_conda
-#conda activate openmmlab
+module load anaconda/mini/23.3.1
+bootstrap_conda
+conda activate openmmlab
 
-./run.sh 0 10400 400 
+./run.sh $1 $2 $3 
