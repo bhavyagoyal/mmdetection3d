@@ -57,6 +57,7 @@ class PointNet2SASSG(BasePointNet):
         self.num_sa = len(sa_channels)
         self.num_fp = len(fp_channels)
         self.sa_mask = sa_mask
+        self.in_channels = in_channels
 
         assert len(num_points) == len(radius) == len(num_samples) == len(
             sa_channels)

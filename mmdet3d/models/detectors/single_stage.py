@@ -160,7 +160,8 @@ class SingleStage3DDetector(Base3DDetector):
         """
         points = batch_inputs_dict['points']
         stack_points = torch.stack(points)
-
+        stack_points = stack_points[:,:,:self.backbone.in_channels]
+        
         if(self.weighted_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,4].detach().contiguous()
@@ -175,7 +176,7 @@ class SingleStage3DDetector(Base3DDetector):
 
             choices = (-1*neighbor_probs).argsort()
             #choices = choices[:,:self.backbone.SA_modules[0].fps_sample_range_list[0]] 
-            stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(5))
+            stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
             #stack_points = stack_points[:,:-10000]
 
         x = self.backbone(stack_points)

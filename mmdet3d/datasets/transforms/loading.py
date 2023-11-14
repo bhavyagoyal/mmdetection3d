@@ -623,13 +623,13 @@ class LoadPointsFromFile(BaseTransform):
             np.ndarray: An array containing point clouds data.
         """
         try:
-            pts_filename_cached = join_path(self.cache_prefix, pts_filename, backend_args=self.backend_args)
-            if(self.cache_prefix and exists(pts_filename_cached, backend_args=self.backend_args)):
-                pts_bytes = get(pts_filename_cached, backend_args=self.backend_args)
-                points = np.frombuffer(pts_bytes, dtype=np.float32)
-            else:
-                pts_bytes = get(pts_filename, backend_args=self.backend_args)
-                points = np.frombuffer(pts_bytes, dtype=np.float32)
+            pts_filename_read = pts_filename
+            if(self.cache_prefix):
+                pts_filename_cached = join_path(self.cache_prefix, pts_filename, backend_args=self.backend_args)
+                if(exists(pts_filename_cached, backend_args=self.backend_args)):
+                    pts_filename_read = pts_filename_cached
+            pts_bytes = get(pts_filename_read, backend_args=self.backend_args)
+            points = np.frombuffer(pts_bytes, dtype=np.float32)
         except ConnectionError:
             mmengine.check_file_exist(pts_filename)
             if pts_filename.endswith('.npy'):
@@ -656,8 +656,8 @@ class LoadPointsFromFile(BaseTransform):
         points = points.reshape(-1, self.load_dim)
         points = points[:, self.use_dim]
         if self.norm_probabilities:
-            assert len(self.use_dim) >= 4, \
-                f'When using probabilities norm, expect used dimensions >= 4, got {len(self.use_dim)}'  # noqa: E501
+            assert self.load_dim >= 7, \
+                f'When using probabilities norm, expect load dimensions >= 7, got {self.load_dim}'  # noqa: E501
             points[:, 3] /= points[:, 3].max()
         if self.norm_intensity:
             assert len(self.use_dim) >= 4, \
