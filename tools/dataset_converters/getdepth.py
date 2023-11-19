@@ -14,8 +14,8 @@ from mmcv.ops.ball_query import ball_query
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
 #OUTFOLDER = BASE + '../pypoints/'
-OUTFOLDER = '/scratch/bhavya/pypoints/'
-GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+OUTFOLDER = '/scratch/bhavya/pypoints/50k/'
+GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
@@ -222,11 +222,6 @@ def argmaxrandomtie(spad):
             spadmax[i,j] = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
     return spadmax
 
-#all_correct, all_incorrect = [], []
-#all_correct_neigh, all_incorrect_neigh = [], []
-#all_correct_neighprobs, all_incorrect_neighprobs = [], []
-#all_correct_neighprobsweighted, all_incorrect_neighprobsweighted = [], []
-#probmax = 0
 def main(args):
     
     start, end = 0, len(scenes)
@@ -239,6 +234,11 @@ def main(args):
     if not os.path.exists(outfolder):
         os.makedirs(outfolder)
 
+    all_correct, all_incorrect = [], []
+    all_correct_neigh, all_incorrect_neigh = [], []
+    all_correct_neighprobs, all_incorrect_neighprobs = [], []
+    all_correct_neighprobsweighted, all_incorrect_neighprobsweighted = [], []
+    probmax = 0
     for scene in scenes[start:end]:
         print(scene)
         OUTFILE = outfolder + scene.zfill(6) +'.bin'
@@ -318,8 +318,8 @@ def main(args):
         density = density[valid]
         correct = correct[valid]
     
-        #all_correct.extend(density[correct])
-        #all_incorrect.extend(density[~correct])
+        all_correct.extend(density[correct])
+        all_incorrect.extend(density[~correct])
     
         #density = density/density.sum()
     
@@ -330,15 +330,15 @@ def main(args):
         points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
    
  
-        #points3d_rgb = random_sampling(points3d_rgb, 50000, p=density)
-        #points3d_rgb, choices = random_sampling(points3d_rgb, 20000)
-        
+        ##points3d_rgb = random_sampling(points3d_rgb, 50000, p=density)
+        points3d_rgb, choices = random_sampling(points3d_rgb, 50000)
+        #
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
         #probmax = max(probmax, points_probs.max())
         ##points_probs = points_probs/points_probs.max()
     
-        #MAX_BALL_NEIGHBORS = 1024
+        #MAX_BALL_NEIGHBORS = 64
         ## Ball query returns same index is neighbors are less than queried number of neighbors
         ## output looks like [3,56,74,2,44,3,3,3,3,3,3,3,3,3,3,3,3]
         #ball_idxs = ball_query(0, 0.2, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
@@ -382,26 +382,26 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect, bins, color='r', alpha=0.5)
-    #plt.savefig('figs/pointprobs1024_peaks_' + sbr + '.png', dpi=500)
+    #plt.savefig('figs/pointprobs64_peaks_' + args.sbr + '.png', dpi=500)
     #
     #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct_neighprobs, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighprobs, bins, color='r', alpha=0.5)
-    #plt.savefig('figs/neighprobs1024_peaks_' + sbr + '.png', dpi=500)
+    #plt.savefig('figs/neighprobs64_peaks_' + args.sbr + '.png', dpi=500)
     #
     #plt.close()
     #bins = range(1025)
     #plt.hist(all_correct_neigh, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neigh, bins, color='r', alpha=0.5)
-    #plt.savefig('figs/neighcount1024_peaks_' + sbr + '.png', dpi=500)
+    #plt.savefig('figs/neighcount64_peaks_' + args.sbr + '.png', dpi=500)
     #
     #
     #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct_neighprobsweighted, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighprobsweighted, bins, color='r', alpha=0.5)
-    #plt.savefig('figs/neighweightedprobs1024_peaks_' + sbr + '.png', dpi=500)
+    #plt.savefig('figs/neighweightedprobs64_peaks_' + args.sbr + '.png', dpi=500)
 
 
 if __name__ == '__main__':

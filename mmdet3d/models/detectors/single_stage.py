@@ -42,7 +42,7 @@ class SingleStage3DDetector(Base3DDetector):
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
-                 weighted_score: bool = False,
+                 neighbor_score: float = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -54,7 +54,7 @@ class SingleStage3DDetector(Base3DDetector):
         self.bbox_head = MODELS.build(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.weighted_score = weighted_score
+        self.neighbor_score = neighbor_score
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
@@ -109,7 +109,7 @@ class SingleStage3DDetector(Base3DDetector):
                 - bboxes_3d (Tensor): Contains a tensor with shape
                     (num_instances, C) where C >=7.
         """
-        x = self.extract_feat(batch_inputs_dict)
+        x = self.extract_feat(batch_inputs_dict, True)
         results_list = self.bbox_head.predict(x, batch_data_samples, **kwargs)
         predictions = self.add_pred_to_datasample(batch_data_samples,
                                                   results_list)
@@ -141,7 +141,7 @@ class SingleStage3DDetector(Base3DDetector):
         return results
 
     def extract_feat(
-        self, batch_inputs_dict: Dict[str, Tensor]
+        self, batch_inputs_dict: Dict[str, Tensor], evaluating: bool = False
     ) -> Union[Tuple[torch.Tensor], Dict[str, Tensor]]:
         """Directly extract features from the backbone+neck.
 
@@ -162,22 +162,35 @@ class SingleStage3DDetector(Base3DDetector):
         stack_points = torch.stack(points)
         stack_points = stack_points[:,:,:self.backbone.in_channels]
         
-        if(self.weighted_score):
+        if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,4].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
             ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
             #ball_idxs = ball_idxs[:,:,1:]
-            nonzero_ball_idxs = (ball_idxs!=0)
-            points_probs = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
-            neighbor_probs = torch.gather(points_probs, 1, ball_idxs) 
+
+            idxs = torch.arange(0,points_xyz.shape[1])[None, :, None].cuda()
+            nonzero_ball_idxs = ((ball_idxs-idxs)!=0)
+            #nonzero_count = nonzero_ball_idxs.sum(-1)
+
+            points_probs_tiled = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
+            neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
             neighbor_probs = neighbor_probs*nonzero_ball_idxs
             neighbor_probs = neighbor_probs.mean(-1)
+            #neighbor_probs_weighted = neighbor_probs*points_probs
+            
+            #neighbor_probs_sorted, neighbor_probs_sorted_idxs = torch.sort(neighbor_probs)
+            stack_points[neighbor_probs<self.neighbor_score]=0
 
-            choices = (-1*neighbor_probs).argsort()
-            #choices = choices[:,:self.backbone.SA_modules[0].fps_sample_range_list[0]] 
-            stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+            ## TODO: haven't tested this code
+            #if(evaluating):
+            #    choices = (-1*neighbor_probs).argsort()
+            #    self.backbone.SA_modules[0].fps_sample_range_list[0]= torch.searchsorted(stack_points, 0.5)[0]
+            #    choices = choices[:,:self.backbone.SA_modules[0].fps_sample_range_list[0]] 
+            #    stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+
             #stack_points = stack_points[:,:-10000]
+
 
         x = self.backbone(stack_points)
         if self.with_neck:
