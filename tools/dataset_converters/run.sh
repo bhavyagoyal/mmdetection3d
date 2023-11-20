@@ -6,7 +6,7 @@ for (( i = 0; i < $SPLITS; i++ ))
 do
         BEGIN=$(($i*$EACH+$START))
         echo $BEGIN
-	python -u getdepth.py --method=peaks-confidence --sbr=5_50 \
+	python -u getdepth.py --method=peaks-confidence --sbr=1_50 \
 	--start $BEGIN --end $(($BEGIN+$EACH)) &
         sleep 5
 done

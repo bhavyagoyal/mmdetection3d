@@ -13,9 +13,9 @@ from mmcv.ops.ball_query import ball_query
 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-#OUTFOLDER = BASE + '../pypoints/'
-OUTFOLDER = '/scratch/bhavya/pypoints/50k/'
-GEN_FOLDER = 'processed_full_lowflux/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+#OUTFOLDER = BASE + '../points_sp_cf/'
+OUTFOLDER = '/scratch/bhavya/points_sp_cf/'
+GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
@@ -113,10 +113,16 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity):
     density = density[:,:,:NUM_PEAKS]
     allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
 
+    sampling_prob = np.ones_like(density)/NUM_PEAKS
     maxdensity = density.max(axis=-1, keepdims=True)
     removepeaks = density<(maxdensity-0.5)
     density[removepeaks]=0.
     allpeaks[removepeaks]=0
+    sampling_prob[removepeaks]=0.
+
+    total_sampling_prob = sampling_prob.sum(-1, keepdims=True)
+    total_sampling_prob[total_sampling_prob<1e-9]=1
+    sampling_prob = sampling_prob/total_sampling_prob
 
     # Can remove points that are too close to camera
     # Few examples that I saw, 58 was the min bin count
@@ -125,9 +131,10 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity):
     #allpeaks[removepeaks]=0
 
     # Convert it to probability
-#    totaldensity = density.sum(-1, keepdims=True)
+#    totaldensity = density.sum(-1, keepdims=true)
 #    totaldensity[totaldensity<1e-9]=1
 #    density = density/totaldensity
+
 
     #for ii in range(nr//2+10, nr//2+12):
     #    for jj in range(1, nc+1):
@@ -166,9 +173,9 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity):
     Y = ya*depths
     Z = depths
     points3d = np.stack([X, Z, -Y])
-    points3d, density = points3d.reshape((3,-1)), density.flatten()
+    points3d, density, sampling_prob = points3d.reshape((3,-1)), density.flatten(), sampling_prob.flatten()
     points3d = np.matmul(Rtilt, points3d)
-    return points3d, density, correct
+    return points3d, density, sampling_prob, correct
 
 # Convert dist to depth
 def finaldepth(nr, nc, K, dist, gtvalid):
@@ -306,32 +313,38 @@ def main(args):
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
         elif(args.method == 'peaks-confidence'):
-            points3d, density, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         else:
             print('not implemented yet')
             exit(0)
-    
+
         correct = correct.reshape(-1)
-        valid = np.all(points3d, axis=0) # only select points that have non zero locations
-    
-        density = density[valid]
-        correct = correct[valid]
-    
-        all_correct.extend(density[correct])
-        all_incorrect.extend(density[~correct])
-    
-        #density = density/density.sum()
-    
         rgb = rgb.reshape((3, -1))
+
+        valid = np.all(points3d, axis=0) # only select points that have non zero locations    
+        density = density[valid]
+        sampling_prob = sampling_prob[valid]
+        correct = correct[valid]
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
-        #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
-        points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
+    
+        points3d, choices = random_sampling(points3d, 50000, p=sampling_prob/sampling_prob.sum())
+        density = density[choices]
+        sampling_prob = sampling_prob[choices]
+        rgb = rgb[choices]
+        correct = correct[choices]
+
+        all_correct.extend(density[correct])
+        all_incorrect.extend(density[~correct])
    
+        #density = density/density.sum()
+    
+        #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+        points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
  
         ##points3d_rgb = random_sampling(points3d_rgb, 50000, p=density)
-        points3d_rgb, choices = random_sampling(points3d_rgb, 50000)
+        #points3d_rgb, choices = random_sampling(points3d_rgb, 50000)
         #
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
