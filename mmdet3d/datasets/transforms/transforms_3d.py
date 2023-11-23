@@ -1090,7 +1090,7 @@ class PointSample(BaseTransform):
                 
             # converting to np array to avoid floating point precision errors
             # which makes sum of probability not 1
-            probs = np.array(points.tensor[:,4])
+            probs = np.array(points.tensor[:,5])
             probs = probs/probs.sum(-1, keepdims=True)
             choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
             # sort points in decreasing order of probabilities

@@ -13,9 +13,9 @@ from mmcv.ops.ball_query import ball_query
 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-#OUTFOLDER = BASE + '../points_sp_cf/'
-OUTFOLDER = '/scratch/bhavya/points_sp_cf/'
-GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0/'
+#OUTFOLDER = BASE + '../points_wp_cf/'
+OUTFOLDER = '/scratch/bhavya/points_wsp_cf/'
+GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
@@ -59,11 +59,11 @@ def parse_args():
     parser.add_argument(
         '--method',
         choices=['argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence'],
-        default='argmax-filtering',
+        default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_50', '5_100', '1_50', '1_100'],
+        choices=['5_50', '5_100', '1_50', '1_100', '5_500'],
         default='5_100',
         help='SBR')
     parser.add_argument('--start', default=None, type=int,
@@ -113,16 +113,14 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity):
     density = density[:,:,:NUM_PEAKS]
     allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
 
-    sampling_prob = np.ones_like(density)/NUM_PEAKS
     maxdensity = density.max(axis=-1, keepdims=True)
     removepeaks = density<(maxdensity-0.5)
     density[removepeaks]=0.
     allpeaks[removepeaks]=0
-    sampling_prob[removepeaks]=0.
 
-    total_sampling_prob = sampling_prob.sum(-1, keepdims=True)
+    total_sampling_prob = density.sum(-1, keepdims=True)
     total_sampling_prob[total_sampling_prob<1e-9]=1
-    sampling_prob = sampling_prob/total_sampling_prob
+    sampling_prob = density/total_sampling_prob
 
     # Can remove points that are too close to camera
     # Few examples that I saw, 58 was the min bin count
@@ -251,7 +249,7 @@ def main(args):
         OUTFILE = outfolder + scene.zfill(6) +'.bin'
         if(os.path.exists(OUTFILE)):
             continue
-        data = scipy.io.loadmat(BASE + GEN_FOLDER + 'spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
+        data = scipy.io.loadmat(BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
     
         nr, nc = data['intensity'].shape
         nt = data['num_bins'][0,0]
