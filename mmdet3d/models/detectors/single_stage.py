@@ -176,9 +176,8 @@ class SingleStage3DDetector(Base3DDetector):
             if(self.max_neighbor):
                 MAX_BALL_NEIGHBORS = self.max_neighbor
             ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
-            #ball_idxs = ball_idxs[:,:,1:]
 
-            #idxs = torch.arange(0,points_xyz.shape[1])[None, :, None].cuda()
+            # repeating first output of ball query as it is repeated if neighbors are fewer
             ball_idxs_first = ball_idxs[:,:,0][:,:,None]
             nonzero_ball_idxs = ((ball_idxs-ball_idxs_first)!=0)
             #nonzero_count = nonzero_ball_idxs.sum(-1)

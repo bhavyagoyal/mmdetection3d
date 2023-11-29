@@ -13,8 +13,8 @@ from mmcv.ops.ball_query import ball_query
 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_testing/'
-#OUTFOLDER = '/scratch/bhavya/points_wsp_cf/'
+#OUTFOLDER = BASE + '../points_baseline/'
+OUTFOLDER = '/scratch/bhavya/points_baseline/'
 GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
@@ -63,7 +63,7 @@ def parse_args():
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_50', '5_100', '1_50', '1_100', '5_500'],
+        choices=['5_1', '5_50', '5_100', '1_50', '1_100'],
         default='1_50',
         help='SBR')
     parser.add_argument('--start', default=None, type=int,
@@ -284,6 +284,7 @@ def main(args):
         rgb = rgb[:, :, ::-1]  # BGR -> RGB
         rgb = rgb.transpose(2,0,1) # HWC -> CHW
         density = None
+        sampling_prob = None
     
         # Subtract 1 from range bins to get the right bin index in python
         # as matlab indexes it from 1
@@ -339,19 +340,26 @@ def main(args):
 
         valid = np.all(points3d, axis=0) # only select points that have non zero locations    
         density = density[valid]
-        sampling_prob = sampling_prob[valid]
         correct = correct[valid]
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
     
-        points3d, choices = random_sampling(points3d, 50000, p=sampling_prob/sampling_prob.sum())
+        if(sampling_prob is not None):
+            sampling_prob = sampling_prob[valid]
+            points3d, choices = random_sampling(points3d, 50000, p=sampling_prob/sampling_prob.sum())
+            sampling_prob = sampling_prob[choices]
+        else:
+            points3d, choices = random_sampling(points3d, 50000)
+
         density = density[choices]
-        sampling_prob = sampling_prob[choices]
         rgb = rgb[choices]
         correct = correct[choices]
 
         #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
-        points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
+        if(sampling_prob is not None):
+            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
+        else:
+            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
  
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]

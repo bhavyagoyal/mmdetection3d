@@ -2,14 +2,14 @@
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=12
 #SBATCH --gres=gpu:2
-#SBATCH --mem=32G
+#SBATCH --mem=40G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
 #SBATCH --exclude=euler24,euler25,euler26,euler27
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=mmdt3d
-#SBATCH --no-requeue
+###SBATCH --no-requeue
 
 #conda 23.3.1, cuda11.8
 #conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia
@@ -32,7 +32,8 @@ EXPERIMENT=work_dir_py/5_5_gtdepthall_worepeat/votenet_8xb16_sunrgbd-3d/
 EXPERIMENT=work_dir_py/1_50_filteringpeaks_points50000+densitynormed+weighted+fps5000/votenet_8xb16_sunrgbd-3d/
 #EXPERIMENT=work_dir_py/1_50/peaks-confidence-ns06_cached/votenet_8xb16_sunrgbd-3d/
 #EXPERIMENT=work_dir_py/5_50/peaks-confidence-ns06_weightedsampling/votenet_8xb16_sunrgbd-3d/
-EXPERIMENT=work_dir_py/wsp-cf/1_50/fps5000_wns005/
+#EXPERIMENT=work_dir_py/wsp-cf/1_50/fps5000_wsp01_sortbywsp/
+EXPERIMENT=work_dir_py/cf-wsp/1_50/nsp02_sortbynsp/
 CHECKPOINT=${EXPERIMENT}/epoch_36.pth
 #DATAPATH=py/points_1_50_filteringpeaks
 DATAPATH=wsp_cf/peaks-confidence_1_50
@@ -69,9 +70,11 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_dataloader.num_workers=8 \
 	val_dataloader.dataset.pipeline.1.transforms.2.probability_sampling=True \
 	train_dataloader.dataset.dataset.pipeline.4.probability_sampling=True \
-	model.backbone.fps_sample_range_list="[5000,-1,-1,-1]" \
-	model.neighbor_score=0.05 \
-
+	model.backbone.fps_sample_range_list="[-1,-1,-1,-1]" \
+	model.neighbor_score=0.2 \
+	model.prob_index=5 \
+	model.weighted_filtering_score=False \
+	model.sort_by_score=True \
 
 
 
@@ -85,6 +88,7 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 #	val_dataloader.dataset.ann_file='sunrgbd_infos_val_short.pkl'
 	#train_dataloader.dataset.dataset.pipeline.0.norm_probabilities=True \
 	#val_dataloader.dataset.pipeline.0.norm_probabilities=True \
+	#model.max_neighbor=1024 \
 
 
 
