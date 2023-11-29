@@ -43,6 +43,10 @@ class SingleStage3DDetector(Base3DDetector):
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
                  neighbor_score: float = None,
+                 weighted_filtering_score: bool = False,
+                 sort_by_score: bool = False,
+                 prob_index: int = 5,
+                 max_neighbor: int = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -55,6 +59,10 @@ class SingleStage3DDetector(Base3DDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.neighbor_score = neighbor_score
+        self.weighted_filtering_score = weighted_filtering_score
+        self.sort_by_score = sort_by_score
+        self.prob_index = prob_index
+        self.max_neighbor = max_neighbor
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
@@ -163,13 +171,16 @@ class SingleStage3DDetector(Base3DDetector):
         
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
-            points_probs = stack_points[:,:,4].detach().contiguous()
+            points_probs = stack_points[:,:,self.prob_index].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
+            if(self.max_neighbor):
+                MAX_BALL_NEIGHBORS = self.max_neighbor
             ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
             #ball_idxs = ball_idxs[:,:,1:]
 
-            idxs = torch.arange(0,points_xyz.shape[1])[None, :, None].cuda()
-            nonzero_ball_idxs = ((ball_idxs-idxs)!=0)
+            #idxs = torch.arange(0,points_xyz.shape[1])[None, :, None].cuda()
+            ball_idxs_first = ball_idxs[:,:,0][:,:,None]
+            nonzero_ball_idxs = ((ball_idxs-ball_idxs_first)!=0)
             #nonzero_count = nonzero_ball_idxs.sum(-1)
 
             points_probs_tiled = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
@@ -177,13 +188,16 @@ class SingleStage3DDetector(Base3DDetector):
             neighbor_probs = neighbor_probs*nonzero_ball_idxs
             neighbor_probs = neighbor_probs.mean(-1)
             neighbor_probs_weighted = neighbor_probs*points_probs
-            
-            #stack_points[neighbor_probs<self.neighbor_score]=0
-            stack_points[neighbor_probs_weighted<self.neighbor_score]=0
+           
+            if(self.weighted_filtering_score):
+                stack_points[neighbor_probs_weighted<self.neighbor_score]=0
+                choices = (-1*neighbor_probs_weighted).argsort()
+            else: 
+                stack_points[neighbor_probs<self.neighbor_score]=0
+                choices = (-1*neighbor_probs).argsort()
 
-            #choices = (-1*neighbor_probs).argsort()
-            #choices = (-1*neighbor_probs_weighted).argsort()
-            #stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+            if(self.sort_by_score):
+                stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
 
             ## TODO: haven't tested this code
             #if(evaluating):
