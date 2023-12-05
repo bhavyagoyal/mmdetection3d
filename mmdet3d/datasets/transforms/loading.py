@@ -687,6 +687,11 @@ class LoadPointsFromFile(BaseTransform):
                     points.shape[1] - 2,
                     points.shape[1] - 1,
                 ]))
+        if(len(self.use_dim)==4):
+            attribute_dims['confidence']=4
+        if(len(self.use_dim)==5):
+            attribute_dims['confidence']=4
+            attribute_dims['sampling_prob']=5
 
         points_class = get_points_type(self.coord_type)
         points = points_class(

@@ -1091,21 +1091,21 @@ class PointSample(BaseTransform):
         if(self.probability_sampling):
             # converting to np array to avoid floating point precision errors
             # which makes sum of probability not 1
-            probs = np.array(points.tensor[:,5])
+            probs = np.array(points.tensor[:,points.attribute_dims['sampling_prob']])
             probs = probs/probs.sum(-1, keepdims=True)
             choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
+            #probs = points.tensor[:,points.attribute_dims['confidence']]
+            #choices = np.argsort(-1*probs)[:num_samples]
 
 
         if(self.pre_sort):
             # sort points in decreasing order of probabilities
             # and restrict FPS to select from first few points
-            probs = points.tensor[:,5]
+            probs = points.tensor[:,points.attribute_dims['sampling_prob']]
             probs = probs[choices]
-            negprobs = -1*probs
-            choices = choices[np.argsort(negprobs)]
-            #choices = (-1*probs).argsort()[:num_samples]
+            choices = choices[np.argsort(-1*probs)]
 
         if sample_range is not None and not replace:
             choices = np.concatenate((far_inds, choices))

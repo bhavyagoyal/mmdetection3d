@@ -170,8 +170,8 @@ class SingleStage3DDetector(Base3DDetector):
         stack_points = torch.stack(points)
         
         if(self.neighbor_score):
-            points_xyz = stack_points[:,:,:3].clone().detach().contiguous()
-            points_probs = stack_points[:,:,self.prob_index].clone().detach().contiguous()
+            points_xyz = stack_points[:,:,:3].detach().contiguous()
+            points_probs = stack_points[:,:,self.prob_index].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
             if(self.max_neighbor):
                 MAX_BALL_NEIGHBORS = self.max_neighbor
@@ -193,8 +193,9 @@ class SingleStage3DDetector(Base3DDetector):
                 stack_points[ignore_points]=0
             else: 
                 ignore_points = neighbor_probs<self.neighbor_score
-                stack_points[ignore_points]=0
+                stack_points[ignore_points]=-1000
 
+        choices = None
         if(self.post_sort):
             choices = torch.argsort(stack_points[:,:,self.prob_index], descending=True)
             stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
@@ -208,6 +209,7 @@ class SingleStage3DDetector(Base3DDetector):
 
         stack_points = stack_points[:,:,:self.backbone.in_channels]
         batch_inputs_dict['points'] = torch.unbind(stack_points)
+        #x = self.backbone(stack_points, choices)
         x = self.backbone(stack_points)
         if self.with_neck:
             x = self.neck(x)

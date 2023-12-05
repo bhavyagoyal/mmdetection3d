@@ -13,12 +13,13 @@ from mmcv.ops.ball_query import ball_query
 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-#OUTFOLDER = BASE + '../points_baseline/'
-OUTFOLDER = '/scratch/bhavya/points_baseline/'
+OUTFOLDER = BASE + '../testing/'
+#OUTFOLDER = '/scratch/bhavya/points_baseline/'
 GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
+CORRECTNESS_THRESH = 50
 
 scenes = open(BASE + 'all_data_idx.txt').readlines()
 scenes = [x.strip() for x in scenes]
@@ -118,6 +119,9 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk
         #for ii in range(1, nr+1):
         #    for jj in range(1, nc+1):
         #        selected = []
+        #        selected = copy.deepcopy(peaks[ii-1, jj-1, :])
+        #        
+        #        
         #        for k in peaks[ii-1,jj-1,:]:
         #            if(len(selected)==0 or 
             
@@ -166,7 +170,7 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk
 
 
     # Only using this for visualization. These points are approximately correct depth
-    correct = abs(np.repeat(rbins[:,:,np.newaxis], NUM_PEAKS, axis=-1) - allpeaks)<=10 
+    correct = abs(np.repeat(rbins[:,:,np.newaxis], NUM_PEAKS, axis=-1) - allpeaks)<=CORRECTNESS_THRESH
 
     dists = tof2depth(allpeaks*bin_size)
     depths = dists/(xa**2 + ya**2 + 1)**0.5
@@ -301,7 +305,7 @@ def main(args):
         if(args.method=='argmax-filtering-conf'):
             spad, density = argmaxfiltering(spad)
             density = density.reshape(-1)
-            correct = abs(data['range_bins']-spad)<=10
+            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
     
             #for ii in range(nr//2+10, nr//2+15):
             #    for jj in range(1, nc+1):
@@ -347,6 +351,10 @@ def main(args):
         if(sampling_prob is not None):
             sampling_prob = sampling_prob[valid]
             points3d, choices = random_sampling(points3d, 50000, p=sampling_prob/sampling_prob.sum())
+            #negprobs = -1*sampling_prob[choices]
+            #newchoices = negprobs.argsort()
+            #choices = choices[newchoices]
+            #points3d = points3d[newchoices]
             sampling_prob = sampling_prob[choices]
         else:
             points3d, choices = random_sampling(points3d, 50000)
@@ -364,13 +372,15 @@ def main(args):
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
         #points_sp = torch.from_numpy(points3d_rgb[:,4]).cuda()[None, :]
+
+
         #cfmax = max(cfmax, points_probs.max())
         ##points_probs = points_probs/points_probs.max()
     
         #all_correct_cf.extend(points_probs[0, correct].tolist())
         #all_incorrect_cf.extend(points_probs[0, ~correct].tolist())
 
-        #MAX_BALL_NEIGHBORS = 1024
+        #MAX_BALL_NEIGHBORS = 64
         ## Ball query returns same index is neighbors are less than queried number of neighbors
         ## output looks like [3,56,74,2,44,3,3,3,3,3,3,3,3,3,3,3,3]
         #ball_idxs = ball_query(0, 0.2, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
@@ -413,41 +423,42 @@ def main(args):
         #cv2.imwrite(outfolder + scene.zfill(6) + '.png', depthmap)
     
     #UPPER = int((cfmax+0.5)*100)
+    #IMAGE_DIR = 'figs_updated_sorted50'
     #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_cf, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/pointcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/pointcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = range(MAX_BALL_NEIGHBORS+2)
     #plt.hist(all_correct_neighcount, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighcount, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
     #    
     #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct_neighcf, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighcf, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/neighcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/neighcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
     #
     #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
     #plt.hist(all_correct_neighcfweighted, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighcfweighted, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/neighcfweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/neighcfweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = [x*0.01 for x in range(101)]
     #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = [x*0.01 for x in range(101)]
     #plt.hist(all_correct_neighspweighted, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighspweighted, bins, color='r', alpha=0.5)
-    #plt.savefig('figs_updated/neighspweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.savefig(IMAGE_DIR + '/neighspweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
 
 
