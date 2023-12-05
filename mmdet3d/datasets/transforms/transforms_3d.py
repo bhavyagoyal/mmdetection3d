@@ -1031,12 +1031,14 @@ class PointSample(BaseTransform):
     def __init__(self,
                  num_points: int,
                  probability_sampling: bool = False,
+                 pre_sort: bool = False,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
         self.num_points = num_points
         self.sample_range = sample_range
         self.replace = replace
         self.probability_sampling = probability_sampling
+        self.pre_sort = pre_sort
 
     def _points_random_sampling(
         self,
@@ -1087,18 +1089,24 @@ class PointSample(BaseTransform):
             point_range = near_inds
             num_samples -= len(far_inds)
         if(self.probability_sampling):
-                
             # converting to np array to avoid floating point precision errors
             # which makes sum of probability not 1
             probs = np.array(points.tensor[:,5])
             probs = probs/probs.sum(-1, keepdims=True)
             choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
-            # sort points in decreasing order of probabilities
-            # and restrict FPS to select from first few points
-            negprobs = -1*probs[choices]
-            choices = choices[negprobs.argsort()]
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
+
+
+        if(self.pre_sort):
+            # sort points in decreasing order of probabilities
+            # and restrict FPS to select from first few points
+            probs = points.tensor[:,5]
+            probs = probs[choices]
+            negprobs = -1*probs
+            choices = choices[np.argsort(negprobs)]
+            #choices = (-1*probs).argsort()[:num_samples]
+
         if sample_range is not None and not replace:
             choices = np.concatenate((far_inds, choices))
             # Shuffle points after sampling

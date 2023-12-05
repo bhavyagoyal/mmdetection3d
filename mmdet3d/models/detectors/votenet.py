@@ -65,8 +65,8 @@ class VoteNet(SingleStage3DDetector):
         feat_dict = self.extract_feat(batch_inputs_dict)
         #print(feat_dict.keys(), feat_dict['sa_xyz'][0].shape, feat_dict['sa_xyz'][1].shape)
         #for x in range(feat_dict['sa_xyz'][0].shape[0]):
-        #    feat_dict['sa_xyz'][1][x].cpu().numpy().astype(np.float32).tofile('pointscheck/argmaxprobs5-50-points50000-fps40000-1-' + str(x) + '.bin')
-        #    feat_dict['sa_xyz'][0][x].cpu().numpy().astype(np.float32).tofile('pointscheck/argmaxprobs5-50-points50000-fps40000-0-' + str(x) + '.bin')
+        #    feat_dict['sa_xyz'][1][x].cpu().numpy().astype(np.float32).tofile('pointscheck/peaks-confidence-1-50-fps5000-sp03-1-' + str(x) + '.bin')
+        #    feat_dict['sa_xyz'][0][x].cpu().numpy().astype(np.float32).tofile('pointscheck/peaks-confidence-1-50-fps5000-sp03-0-' + str(x) + '.bin')
         #exit(0)
         points = batch_inputs_dict['points']
         losses = self.bbox_head.loss(points, feat_dict, batch_data_samples,
@@ -100,7 +100,7 @@ class VoteNet(SingleStage3DDetector):
                 - bboxes_3d (:obj:`BaseInstance3DBoxes`): Prediction of bboxes,
                     contains a tensor with shape (num_instances, 7).
         """
-        feats_dict = self.extract_feat(batch_inputs_dict)
+        feats_dict = self.extract_feat(batch_inputs_dict, True)
         points = batch_inputs_dict['points']
         results_list = self.bbox_head.predict(points, feats_dict,
                                               batch_data_samples, **kwargs)

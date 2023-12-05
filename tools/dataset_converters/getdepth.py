@@ -247,7 +247,7 @@ def main(args):
     if(args.end is not None):
         end = args.end
 
-    outfolder = OUTFOLDER + args.method + '_' + args.sbr + '/'
+    outfolder = OUTFOLDER + args.method + '/' + args.sbr + '/'
     if not os.path.exists(outfolder):
         os.makedirs(outfolder)
 

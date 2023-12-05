@@ -43,8 +43,9 @@ def plot_curve(log_dicts, args):
     if legend is None:
         legend = []
         for json_log in args.json_logs:
+            json_log_fname = '/'.join(json_log.split('/')[:-3])
             for metric in args.keys:
-                legend.append(f'{json_log}_{metric}')
+                legend.append(f'{json_log_fname}_{metric}')
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
@@ -205,6 +206,8 @@ def main():
     for idx, json_log in enumerate(json_logs):
         if(not json_log.endswith('.json')):
             for root, dirs, files in os.walk(json_log):
+                dirs.sort()
+                files.sort()
                 for file in files:
                     if(file.endswith('.json')):
                         json_logs[idx] = os.path.join(root, file)
