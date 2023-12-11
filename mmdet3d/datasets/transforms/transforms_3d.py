@@ -1031,13 +1031,15 @@ class PointSample(BaseTransform):
     def __init__(self,
                  num_points: int,
                  probability_sampling: bool = False,
-                 pre_sort: bool = False,
+                 topk_sampling: bool = False,
+                 pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
         self.num_points = num_points
         self.sample_range = sample_range
         self.replace = replace
         self.probability_sampling = probability_sampling
+        self.topk_sampling = topk_sampling
         self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1094,16 +1096,18 @@ class PointSample(BaseTransform):
             probs = np.array(points.tensor[:,points.attribute_dims['sampling_prob']])
             probs = probs/probs.sum(-1, keepdims=True)
             choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
+        elif(self.topk_sampling):
+            probs = points.tensor[:,4]
+            choices = np.argsort(-1*probs)[:num_samples]
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
-            #probs = points.tensor[:,points.attribute_dims['confidence']]
-            #choices = np.argsort(-1*probs)[:num_samples]
 
 
-        if(self.pre_sort):
+        if(self.pre_sort is not None):
             # sort points in decreasing order of probabilities
             # and restrict FPS to select from first few points
-            probs = points.tensor[:,points.attribute_dims['sampling_prob']]
+            #probs = points.tensor[:,points.attribute_dims['sampling_prob']]
+            probs = points.tensor[:,self.pre_sort]
             probs = probs[choices]
             choices = choices[np.argsort(-1*probs)]
 

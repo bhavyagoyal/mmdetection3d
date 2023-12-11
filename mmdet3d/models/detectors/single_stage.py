@@ -44,8 +44,8 @@ class SingleStage3DDetector(Base3DDetector):
                  data_preprocessor: OptConfigType = None,
                  neighbor_score: float = None,
                  weighted_filtering_score: bool = False,
-                 post_sort: bool = False,
-                 prob_index: int = 5,
+                 post_sort: int = None,
+                 filter_index: int = 5,
                  max_neighbor: int = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
@@ -61,7 +61,7 @@ class SingleStage3DDetector(Base3DDetector):
         self.neighbor_score = neighbor_score
         self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort
-        self.prob_index = prob_index
+        self.filter_index = filter_index
         self.max_neighbor = max_neighbor
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
@@ -171,7 +171,7 @@ class SingleStage3DDetector(Base3DDetector):
         
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
-            points_probs = stack_points[:,:,self.prob_index].detach().contiguous()
+            points_probs = stack_points[:,:,self.filter_index].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
             if(self.max_neighbor):
                 MAX_BALL_NEIGHBORS = self.max_neighbor
@@ -189,16 +189,22 @@ class SingleStage3DDetector(Base3DDetector):
             neighbor_probs_weighted = neighbor_probs*points_probs
            
             if(self.weighted_filtering_score):
-                ignore_points = neighbor_weighted_probs<self.neighbor_score
+                ignore_points = neighbor_probs_weighted<self.neighbor_score
                 stack_points[ignore_points]=0
             else: 
                 ignore_points = neighbor_probs<self.neighbor_score
                 stack_points[ignore_points]=-1000
 
         choices = None
-        if(self.post_sort):
-            choices = torch.argsort(stack_points[:,:,self.prob_index], descending=True)
+        if(self.post_sort is not None):
+            if(self.post_sort>=0):
+                choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
+            elif(self.post_sort==-1):
+                choices = torch.argsort(neighbor_probs_weighted, descending=True)
+            else:
+                choices = torch.argsort(neighbor_probs, descending=True)
             stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+            
 
         ## TODO: haven't tested this code
         #if(evaluating):

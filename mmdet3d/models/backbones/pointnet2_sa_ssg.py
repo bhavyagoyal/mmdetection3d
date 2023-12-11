@@ -96,7 +96,7 @@ class PointNet2SASSG(BasePointNet):
                 fp_source_channel = cur_fp_mlps[-1]
                 fp_target_channel = skip_channel_list.pop()
 
-    def forward(self, points: Tensor) -> Dict[str, List[Tensor]]:
+    def forward(self, points: Tensor, points_choices: Tensor = None) -> Dict[str, List[Tensor]]:
         """Forward pass.
 
         Args:
@@ -124,8 +124,12 @@ class PointNet2SASSG(BasePointNet):
         sa_indices = [indices]
 
         for i in range(self.num_sa):
-            cur_xyz, cur_features, cur_indices = self.SA_modules[i](
-                sa_xyz[i], sa_features[i])
+            if(i==0):
+                cur_xyz, cur_features, cur_indices = self.SA_modules[i](
+                    sa_xyz[i], sa_features[i], points_choices)
+            else:
+                cur_xyz, cur_features, cur_indices = self.SA_modules[i](
+                    sa_xyz[i], sa_features[i])
             if(self.sa_mask):
                 attn = torch.take(sa_features[0][:,1,:], cur_indices.long())
                 cur_features = cur_features*attn[:,None,:]

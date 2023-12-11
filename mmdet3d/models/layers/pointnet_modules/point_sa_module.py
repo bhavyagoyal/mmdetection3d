@@ -181,6 +181,7 @@ class BasePointSAModule(nn.Module):
         self,
         points_xyz: Tensor,
         features: Optional[Tensor] = None,
+        choices: Optional[Tensor] = None,
         indices: Optional[Tensor] = None,
         target_xyz: Optional[Tensor] = None,
     ) -> Tuple[Tensor]:
@@ -207,8 +208,15 @@ class BasePointSAModule(nn.Module):
         """
         new_features_list = []
 
+        if(choices is not None):
+            points_xyz_choices = torch.gather(points_xyz, 1, choices[:,:,None].tile(3))
+            features_choices = torch.gather(features, 2, choices[:,None,:].tile(1, features.shape[1], 1))
+        else:
+            points_xyz_choices = points_xyz
+            features_choices = features
+            
         # sample points, (B, num_point, 3), (B, num_point)
-        new_xyz, indices = self._sample_points(points_xyz, features, indices,
+        new_xyz, indices = self._sample_points(points_xyz_choices, features_choices, indices,
                                                target_xyz)
 
         for i in range(len(self.groupers)):
