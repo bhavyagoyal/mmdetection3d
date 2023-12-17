@@ -190,10 +190,17 @@ class SingleStage3DDetector(Base3DDetector):
            
             if(self.weighted_filtering_score):
                 ignore_points = neighbor_probs_weighted<self.neighbor_score
-                stack_points[ignore_points]=0
             else: 
                 ignore_points = neighbor_probs<self.neighbor_score
-                stack_points[ignore_points]=-1000
+
+            # This updates stack_points
+            stack_points_xyzfh = stack_points[...,:4]
+            stack_points_feat = stack_points[...,4:]
+            stack_points_xyzfh[ignore_points]=-1000
+            stack_points_feat[ignore_points]=0
+
+            neighbor_probs[ignore_points]=0
+            neighbor_probs_weighted[ignore_points]=0
 
         choices = None
         if(self.post_sort is not None):

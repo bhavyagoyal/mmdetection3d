@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#SBATCH --partition=research
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=36G
+#SBATCH --time=1:0:0
+#SBATCH -o slurm.%j.%N.out # STDOUT
+#SBATCH -e slurm.%j.%N.err # STDERR
+#SBATCH --job-name=plotmmdt
+
+module load anaconda/mini/23.3.1
+bootstrap_conda
+conda activate openmmlab
+
+cd work_dir_py/cf-wsp/
+#cd work_dir_py/cf-wsp/1_50/updated/
+#cd work_dir_py/baselines/argmax_filtering/
+#cd work_dir_py/baselines/
+
+#python ../../../tools/analysis_tools/analyze_logs.py plot_curve updated/fps5000_sp01_post  updated/fps5000_wsp0{02,05,1}*  --eval --out out.pdf
+#python ../../../tools/analysis_tools/analyze_logs.py plot_curve 1_100/top*  --eval --out out.pdf
+#python ../../../tools/analysis_tools/analyze_logs.py plot_curve */points*  --eval --out points.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_100/updated/fps30000_sp02_post_set-1000  5_100/updated/fps{5,10,20,30,40}000_sp01_post_set-1000  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_50/updated/fps{20,30,40}000_sp01_post_set-1000*  --eval --keys mAP_0.25  --out out.pdf
+
+
+
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_50/updated/fps{5,10,20,30,40}000_sp01_post_set-1000  --eval --keys mAP_0.25 mAP_0.50 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/sp0*_post*  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve {5_50,5_100}/updated/fps*000_sp01_post_set-1000  --eval --out out.pdf
+#python ../../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/points*  --eval --out out.pdf
+
+
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve */updated/fps5000_sp01_post_set-1000 */updated/sp01 --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve */updated/fps5000_sp01_post_set-1000 */updated/sp01_post  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve */updated/fps5000_sp01_post_set-1000 */updated/fps5000_post  --eval --out ablationwfiltering.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_50/updated/fps30000_sp01_post_set-1000 5_50/updated/fps30000_post 5_100/updated/fps30000_sp01_post_set-1000  --eval --out ablationwfiltering.pdf
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_post*  --eval --out out.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_{wsp01_postwsp,wsp0075_postwsp,sp01_post}  1_50/updated/sp01_pos{t,twsp}  1_50/updated/wsp0{05,1}_pos{t,twsp}  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_sp01_pos{t,t_set-1000,t_featsp,t_featspbaseline,t_featsp_attnmask} --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 3dcnndenoise-{softmax,argmax}/denoise/1_50/points*  --eval --out out.pdf
