@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+#SBATCH --array=1-104%10
+
+#SBATCH --partition=research
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=15G
+#SBATCH --time=24:0:0
+
+###SBATCH --nodelist=euler10
+###SBATCH --exclude=euler09
+
+#SBATCH -o slurm.%j.%N.out # STDOUT
+#SBATCH -e slurm.%j.%N.err # STDERR
+#SBATCH -o logs/slurm.%A.%a.%N.out
+#SBATCH -e logs/slurm.%A.%a.%N.err
+
+#SBATCH --job-name=mmdsim
+#SBATCH --no-requeue
+
+
+module load anaconda/mini/23.3.1
+bootstrap_conda
+conda activate openmmlab
+
+#START=$1
+#END=$2
+START=$((($SLURM_ARRAY_TASK_ID-1)*100))
+END=$((($SLURM_ARRAY_TASK_ID)*100))
+
+python -u getdepth.py --method=denoise --sbr=1_50 --start $START --end $END
+
+

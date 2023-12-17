@@ -13,8 +13,8 @@ from mmcv.ops.ball_query import ball_query
 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../testing/'
-#OUTFOLDER = '/scratch/bhavya/points_baseline/'
+OUTFOLDER = BASE + '../points_baseline/3dcnndenoise-softmax/'
+#OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
@@ -59,7 +59,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'topk-confidence'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'topk-confidence'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -267,7 +267,8 @@ def main(args):
         OUTFILE = outfolder + scene.zfill(6) +'.bin'
         if(os.path.exists(OUTFILE)):
             continue
-        data = scipy.io.loadmat(BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
+        mat_file = BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat'
+        data = scipy.io.loadmat(mat_file)
     
         nr, nc = data['intensity'].shape
         nt = data['num_bins'][0,0]
@@ -329,6 +330,15 @@ def main(args):
         
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+        elif(args.method=='denoise'):
+            denoised = np.load(mat_file+'.npz')
+            denoised = denoised['spad_denoised_softmax']
+            correct = abs(data['range_bins']-denoised)<=CORRECTNESS_THRESH
+
+            dist = tof2depth(denoised*data['bin_size'])
+            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+
         elif(args.method == 'peaks-confidence'):
             points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
@@ -343,7 +353,8 @@ def main(args):
         rgb = rgb.reshape((3, -1))
 
         valid = np.all(points3d, axis=0) # only select points that have non zero locations    
-        density = density[valid]
+        if(density is not None):
+            density = density[valid]
         correct = correct[valid]
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
@@ -359,16 +370,19 @@ def main(args):
         else:
             points3d, choices = random_sampling(points3d, 50000)
 
-        density = density[choices]
+        if(density is not None):
+            density = density[choices]
         rgb = rgb[choices]
         correct = correct[choices]
 
         #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
         if(sampling_prob is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
-        else:
+        elif(density is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
- 
+        else:
+            points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
         #points_sp = torch.from_numpy(points3d_rgb[:,4]).cuda()[None, :]
