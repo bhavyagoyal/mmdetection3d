@@ -43,6 +43,7 @@ class SingleStage3DDetector(Base3DDetector):
                  test_cfg: OptConfigType = None,
                  data_preprocessor: OptConfigType = None,
                  neighbor_score: float = None,
+                 updated_fps: float = None,
                  weighted_filtering_score: bool = False,
                  post_sort: int = None,
                  filter_index: int = 5,
@@ -59,6 +60,7 @@ class SingleStage3DDetector(Base3DDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.neighbor_score = neighbor_score
+        self.updated_fps = updated_fps
         self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort
         self.filter_index = filter_index
@@ -213,12 +215,14 @@ class SingleStage3DDetector(Base3DDetector):
             stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
             
 
-        ## TODO: haven't tested this code
         #if(evaluating):
-        #    choices = (-1*neighbor_probs).argsort()
-        #    self.backbone.SA_modules[0].fps_sample_range_list[0]= torch.searchsorted(stack_points, 0.5)[0]
-        #    choices = choices[:,:self.backbone.SA_modules[0].fps_sample_range_list[0]] 
-        #    stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+
+        if(self.updated_fps):
+            #curr_fps = stack_points[:,5000,self.post_sort]
+            values = torch.ones(stack_points.shape[0],1).cuda()*-1*self.updated_fps
+            new_fps = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
+            new_fps = new_fps.median()
+            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps
 
         stack_points = stack_points[:,:,:self.backbone.in_channels]
         batch_inputs_dict['points'] = torch.unbind(stack_points)

@@ -3,8 +3,8 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=36G
 #SBATCH --time=1:0:0
-#SBATCH -o slurm.%j.%N.out # STDOUT
-#SBATCH -e slurm.%j.%N.err # STDERR
+#SBATCH -o plotlogs/slurm.%j.%N.out # STDOUT
+#SBATCH -e plotlogs/slurm.%j.%N.err # STDERR
 #SBATCH --job-name=plotmmdt
 
 module load anaconda/mini/23.3.1
@@ -47,6 +47,12 @@ cd work_dir_py/cf-wsp/
 #
 #
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_post*  --eval --out out.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_{wsp01_postwsp,wsp0075_postwsp,sp01_post}  1_50/updated/sp01_pos{t,twsp}  1_50/updated/wsp0{05,1}_pos{t,twsp}  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_{wsp005_post,wsp0075_post,wsp01_post,wsp0125_post,wsp015_post,wsp01_postwsp,wsp0075_postwsp,sp01_post,sp01_post_set-1000}  --eval --out out.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_sp01_pos{t,t_set-1000,t_featsp,t_featspbaseline,t_featsp_attnmask} --eval --out out.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 3dcnndenoise-{softmax,argmax}/denoise/1_50/points*  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/{fps5000_s,s}p01_post  1_50/updated/fps5000_sp01_post_updatedfps{03,04,05,06,07}  --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve all4/updated/sp01_post_updatedfps05_e12 */updated/sp01_post_updatedfps05 ../baselines/argmax_filtering/all4/points*_e12 --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+#
+#
+#
+#

@@ -5,7 +5,7 @@
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler01,euler02,euler05,euler20,euler21,euler24,euler25,euler26,euler27
+#SBATCH --exclude=euler05,euler21,euler24,euler25,euler26,euler27
 ###SBATCH --exclude=euler01,euler05
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -32,14 +32,17 @@ CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.
 EXPERIMENT=work_dir_py/5_5_gtdepthall_worepeat/votenet_8xb16_sunrgbd-3d/
 EXPERIMENT=work_dir_py/1_50_filteringpeaks_points50000+densitynormed+weighted+fps5000/votenet_8xb16_sunrgbd-3d/
 #EXPERIMENT=work_dir_py/cf-wsp/1_50/updated/fps5000_sp01_post_featsp_attnmask
-EXPERIMENT=work_dir_py/cf-wsp/1_50/updated/fps5000_wsp0075_postwsp/
+#EXPERIMENT=work_dir_py/cf-wsp/5_100/updated/sp01_post_updatedfps05/
+#EXPERIMENT=work_dir_py/cf-wsp/1_50/updated/fps5000_sp01_post/
+#EXPERIMENT=work_dir_py/cf-wsp/all4/updated/sp01_post_updatedfps04_e12/
 #EXPERIMENT=work_dir_py/baselines/argmax_filtering/1_100/top10000
-#EXPERIMENT=work_dir_py/baselines/3dcnndenoise-argmax/denoise/1_100/points20000
+EXPERIMENT=work_dir_py/baselines/argmax_filtering/all4/points1500_e12
+#EXPERIMENT=work_dir_py/baselines/3dcnndenoise-argmax/denoise/5_50/points20000
 CHECKPOINT=${EXPERIMENT}/epoch_36.pth
 #DATAPATH=py/points_1_50_filteringpeaks
-DATAPATH=wsp_cf/peaks-confidence_1_50
-#DATAPATH=points_baseline/argmax-filtering-conf/1_100/
-#DATAPATH=points_baseline/3dcnndenoise-argmax/denoise/1_100/
+DATAPATH=wsp_cf/peaks-confidence/5_100
+DATAPATH=points_baseline/argmax-filtering-conf/
+#DATAPATH=points_baseline/3dcnndenoise-argmax/denoise/5_50/
 GPUS=2
 PORTUSED=$(( $RANDOM + 10000 ))
 
@@ -56,47 +59,64 @@ PORTUSED=$(( $RANDOM + 10000 ))
 
 
 # Baselines
-#PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
-#	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
-#	val_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-#	train_dataloader.batch_size=8 \
-#	work_dir=${EXPERIMENT} \
-#	default_hooks.checkpoint.interval=1 \
-#	train_dataloader.dataset.dataset.pipeline.4.num_points=20000 \
-#	val_dataloader.dataset.pipeline.1.transforms.2.num_points=20000 \
-#	train_dataloader.dataset.dataset.pipeline.0.load_dim=6 \
-#	val_dataloader.dataset.pipeline.0.load_dim=6 \
-#	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2]" \
-#	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2]" \
-#	model.backbone.in_channels=4 \
-#	train_dataloader.num_workers=4 \
-
-
-
-
-
-#CUDA_VISIBLE_DEVICES=0 python -u tools/train.py configs/votenet/votenet_8xb16_sunrgbd-3d.py --auto-scale-lr --resume --cfg-options \
 PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
 	val_dataloader.dataset.data_prefix.pts=${DATAPATH} \
 	train_dataloader.batch_size=8 \
 	work_dir=${EXPERIMENT} \
 	default_hooks.checkpoint.interval=1 \
-	train_dataloader.dataset.dataset.pipeline.4.num_points=50000 \
-	val_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
-	train_dataloader.dataset.dataset.pipeline.0.load_dim=8 \
-	val_dataloader.dataset.pipeline.0.load_dim=8 \
-	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,4]" \
-	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
+	train_dataloader.dataset.dataset.pipeline.4.num_points=1500 \
+	val_dataloader.dataset.pipeline.1.transforms.2.num_points=1500 \
+	train_dataloader.dataset.dataset.pipeline.0.load_dim=7 \
+	val_dataloader.dataset.pipeline.0.load_dim=7 \
+	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2]" \
+	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2]" \
 	model.backbone.in_channels=4 \
 	train_dataloader.num_workers=4 \
-	train_dataloader.dataset.dataset.pipeline.4.pre_sort=None \
-	val_dataloader.dataset.pipeline.1.transforms.2.pre_sort=None \
-	model.post_sort=-1 \
-	model.neighbor_score=0.075 \
-	model.filter_index=4 \
-	model.backbone.fps_sample_range_list="[5000,-1,-1,-1]" \
-	model.weighted_filtering_score=True \
+	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50.pkl' \
+	val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50.pkl' \
+	param_scheduler.0.end=12 \
+	param_scheduler.0.milestones=[8,10] \
+	train_cfg.max_epochs=12 \
+
+
+
+
+
+
+
+
+##CUDA_VISIBLE_DEVICES=0 python -u tools/train.py configs/votenet/votenet_8xb16_sunrgbd-3d.py --auto-scale-lr --resume --cfg-options \
+#PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
+#	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
+#	val_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	train_dataloader.batch_size=8 \
+#	work_dir=${EXPERIMENT} \
+#	default_hooks.checkpoint.interval=1 \
+#	train_dataloader.dataset.dataset.pipeline.4.num_points=50000 \
+#	val_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	train_dataloader.dataset.dataset.pipeline.0.load_dim=8 \
+#	val_dataloader.dataset.pipeline.0.load_dim=8 \
+#	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,4]" \
+#	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
+#	model.backbone.in_channels=4 \
+#	train_dataloader.num_workers=4 \
+#	train_dataloader.dataset.dataset.pipeline.4.pre_sort=None \
+#	val_dataloader.dataset.pipeline.1.transforms.2.pre_sort=None \
+#	model.post_sort=4 \
+#	model.neighbor_score=0.1 \
+#	model.filter_index=4 \
+#	model.updated_fps=0.5 \
+#
+#
+
+
+
+	#train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50.pkl' \
+	#val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50.pkl' \
+	#param_scheduler.0.end=12 \
+	#param_scheduler.0.milestones=[8,10] \
+	#train_cfg.max_epochs=12 \
 
 
 
@@ -105,10 +125,6 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 
 
 	#model.max_neighbor=1024 \
-	#train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50.pkl' \
-	#val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50.pkl' \
-	#param_scheduler.0.end=10 \
-	#param_scheduler.0.milestones=[7,9] \
 	#val_dataloader.dataset.pipeline.1.transforms.2.probability_sampling=True \
 	#train_dataloader.dataset.dataset.pipeline.4.probability_sampling=True \
 	#train_dataloader.dataset.dataset.pipeline.0.norm_probabilities=True \
@@ -116,6 +132,8 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	#train_dataloader.dataset.dataset.pipeline.0.cache_prefix="${TMPFOLDER}" \
 #	model.backbone.sa_cfg.pool_mod='avgmax' \
 	#train_dataloader.sampler.shuffle=False \
+	#model.weighted_filtering_score=True \
+	#model.backbone.fps_sample_range_list="[5000,-1,-1,-1]" \
 
 
 	#val_dataloader.dataset.pipeline.1.transforms.2.topk_sampling=True \

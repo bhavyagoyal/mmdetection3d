@@ -5,8 +5,10 @@ from collections import defaultdict
 
 import numpy as np
 import seaborn as sns
+import matplotlib
 from matplotlib import pyplot as plt
 sns.set_palette("Paired")
+matplotlib.rcParams['font.size'] = 5
 
 
 def cal_train_time(log_dicts, args):
