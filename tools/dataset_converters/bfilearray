@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-104%10
+#SBATCH --array=1-104%5
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=15G
+#SBATCH --mem=20G
 #SBATCH --time=24:0:0
 
-###SBATCH --nodelist=euler10
+###SBATCH --nodelist=euler21
 ###SBATCH --exclude=euler09
 
 #SBATCH -o slurm.%j.%N.out # STDOUT
@@ -28,6 +28,6 @@ conda activate openmmlab
 START=$((($SLURM_ARRAY_TASK_ID-1)*100))
 END=$((($SLURM_ARRAY_TASK_ID)*100))
 
-python -u getdepth.py --method=denoise --sbr=1_50 --start $START --end $END
+python -u getdepth.py --method=decompressed-peaks-confidence --sbr=5_50 --start $START --end $END
 
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 ###SBATCH --gres=scratch:1G
-#SBATCH --cpus-per-task=64
-#SBATCH --mem=600G
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=60G
 #SBATCH --time=24:0:0
-#SBATCH --nodelist=euler141
+###SBATCH --nodelist=euler141
 ###SBATCH --exclude=euler09
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -16,4 +16,4 @@ module load anaconda/mini/23.3.1
 bootstrap_conda
 conda activate openmmlab
 
-./run.sh $1 $2 $3 
+python -u getdepth.py --method=decompressed-peaks-confidence --sbr=5_50 --start 5045 --end 5050

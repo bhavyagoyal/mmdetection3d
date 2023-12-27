@@ -10,10 +10,13 @@ import matplotlib.pyplot as plt
 import random
 import torch
 from mmcv.ops.ball_query import ball_query
+import copy
 
+sys.path.append('../../../spatio-temporal-csph/')
+from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_baseline/3dcnndenoise-softmax/'
+OUTFOLDER = BASE + '../points_compression/32/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
@@ -59,7 +62,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'topk-confidence'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -80,8 +83,22 @@ def camera_params(K):
     fx, fy = K[0,0], K[1,1]
     return cx, cy, fx, fy
 
+nt_compression = 1024
+csph1D_obj = CSPH3DLayer(k=32, num_bins=nt_compression, tblock_init='TruncFourier', optimize_codes=False, encoding_type='csph1d', zero_mean_tdim_codes=True)
+csph1D_obj.to(device='cpu')
+
+# Does compression and decompression
+def decompress(spad):
+    assert spad.shape[2]==nt_compression
+    spad_out = spad.transpose(2,0,1)
+    spad_out = torch.from_numpy(spad_out[None,None,...])
+    spad_out = csph1D_obj(spad_out)[0,0,...].numpy()
+    spad_out = spad_out.transpose(1,2,0)
+    return spad_out
+
+
 # Find peaks and converts to point cloud
-def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk=False):
+def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, decompressed=False):
     xx = np.linspace(1, nc, nc)
     yy = np.linspace(1, nr, nr)
     x, y = np.meshgrid(xx, yy)
@@ -89,10 +106,17 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk
     xa = (x - cx)/fx
     ya = (y - cy)/fy
     xa, ya = xa[:,:,np.newaxis], ya[:,:,np.newaxis]
-    spad = scipy.signal.convolve(spad, pulse, mode='same')
+    nt = spad.shape[2]
+
+    if(decompressed):
+        # compress and decompress using truncated fourier
+        spad_copy = copy.deepcopy(spad)
+        spad = decompress(spad)
+    else:
+        spad = scipy.signal.convolve(spad, pulse, mode='same')
 
     allpeaks = np.zeros((nr, nc, NUM_PEAKS_START))
-    if(topk==False):
+    if(True):
         for ii in range(1, nr+1):
             for jj in range(1, nc+1):
                 #peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS_START]
@@ -112,27 +136,15 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk
         allpeaks = dp[1,:,:,:]
         allpeaks = allpeaks[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
     
-    else:
-        pass
-        # TODO: not implemented yet
-        #peaks = (-1*spad).argsort(axis=-1)
-        #for ii in range(1, nr+1):
-        #    for jj in range(1, nc+1):
-        #        selected = []
-        #        selected = copy.deepcopy(peaks[ii-1, jj-1, :])
-        #        
-        #        
-        #        for k in peaks[ii-1,jj-1,:]:
-        #            if(len(selected)==0 or 
-            
 
     density = density[:,:,:NUM_PEAKS]
     allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
 
-    maxdensity = density.max(axis=-1, keepdims=True)
-    removepeaks = density<(maxdensity-0.5)
-    density[removepeaks]=0.
-    allpeaks[removepeaks]=0
+    if(not decompressed):
+        maxdensity = density.max(axis=-1, keepdims=True)
+        removepeaks = density<(maxdensity-0.5)
+        density[removepeaks]=0.
+        allpeaks[removepeaks]=0
 
     total_sampling_prob = density.sum(-1, keepdims=True)
     total_sampling_prob[total_sampling_prob<1e-9]=1
@@ -144,29 +156,31 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, topk
     #density[removepeaks]=0.
     #allpeaks[removepeaks]=0
 
-    # Convert it to probability
-#    totaldensity = density.sum(-1, keepdims=true)
-#    totaldensity[totaldensity<1e-9]=1
-#    density = density/totaldensity
 
 
     #for ii in range(nr//2+10, nr//2+12):
     #    for jj in range(1, nc+1):
-    #        plt.close()
-    #        plt.figure().set_figwidth(24)
-    #        plt.bar(range(nt), spad[ii-1, jj-1,:], width=0.9)
     #        rbin = rbins[ii-1,jj-1]-1
     #        peaks = allpeaks[ii-1, jj-1,:]
+    #        plt.close()
+    #        plt.figure().set_figwidth(24)
+
+    #        plt.subplot(2,1,1)
+    #        plt.bar(range(nt), spad[ii-1, jj-1,:], width=0.9)
     #        plt.scatter([rbin], [spad[ii-1, jj-1, rbin]], c='g', alpha=0.3)
     #        plt.scatter(peaks, [spad[ii-1, jj-1, peaks]], c='r', alpha=0.7)
     #        plt.text(100, 0, str(rbin) + " " + str(spad[ii-1, jj-1].max()) + " " + str(peaks) + " " + str(density[ii-1,jj-1]) )
-    #        plt.savefig('plots_filteringpeaks_' + sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
+    #        plt.subplot(2,1,2)
+    #        plt.bar(range(nt), spad_copy[ii-1, jj-1,:], width=0.9)
+
+    #        plt.savefig('plots_compress32_filteringpeaks_1_50/fig_' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
+
     #        plt.close()
     #        inten = intensity.copy()
     #        inten[ii-1, :]=1
     #        inten[:, jj-1]=1
     #        plt.imshow(inten)
-    #        plt.savefig('plots_filteringpeaks_' + sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
+    #        plt.savefig('plots_compress32_filteringpeaks_1_50/fig_' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
 
 
     # Only using this for visualization. These points are approximately correct depth
@@ -231,6 +245,13 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
 def argmaxfiltering(spad):
     spaddensity = scipy.signal.convolve(spad, pulse, mode='same')
     return spaddensity.argmax(-1), spaddensity.max(-1)
+
+
+# density is just height of each bin, can normalize it in inference code
+def argmaxdecompressed(spad):
+    spad = decompress(spad)
+    return spad.argmax(-1)
+
 
 # random tie breaker for argmax on raw histogram bins
 def argmaxrandomtie(spad):
@@ -330,9 +351,17 @@ def main(args):
         
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+        elif(args.method=='decompressed-argmax'):
+            spad = argmaxdecompressed(spad)
+            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
+
+            dist = tof2depth(spad*data['bin_size'])
+        
+            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
         elif(args.method=='denoise'):
             denoised = np.load(mat_file+'.npz')
-            denoised = denoised['spad_denoised_softmax']
+            denoised = denoised['spad_denoised_argmax']
             correct = abs(data['range_bins']-denoised)<=CORRECTNESS_THRESH
 
             dist = tof2depth(denoised*data['bin_size'])
@@ -342,8 +371,8 @@ def main(args):
         elif(args.method == 'peaks-confidence'):
             points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
-        elif(args.method == 'topk-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], topk = True)
+        elif(args.method == 'decompressed-peaks-confidence'):
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1) 
         else:
             print('not implemented yet')
