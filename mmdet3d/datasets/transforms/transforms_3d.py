@@ -1032,6 +1032,7 @@ class PointSample(BaseTransform):
                  num_points: int,
                  probability_sampling: bool = False,
                  topk_sampling: bool = False,
+                 firstk_sampling: bool = False,
                  pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
@@ -1040,6 +1041,7 @@ class PointSample(BaseTransform):
         self.replace = replace
         self.probability_sampling = probability_sampling
         self.topk_sampling = topk_sampling
+        self.firstk_sampling = firstk_sampling
         self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1099,6 +1101,8 @@ class PointSample(BaseTransform):
         elif(self.topk_sampling):
             probs = points.tensor[:,4]
             choices = np.argsort(-1*probs)[:num_samples]
+        elif(self.firstk_sampling):
+            choices = np.range(num_samples)
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
 

@@ -594,6 +594,7 @@ class LoadPointsFromFile(BaseTransform):
                  use_color: bool = False,
                  norm_intensity: bool = False,
                  norm_probabilities: bool = False,
+                 unit_probabilities: bool = False,
                  norm_elongation: bool = False,
                  backend_args: Optional[dict] = None) -> None:
         self.shift_height = shift_height
@@ -610,6 +611,7 @@ class LoadPointsFromFile(BaseTransform):
         self.use_dim = use_dim
         self.norm_intensity = norm_intensity
         self.norm_probabilities = norm_probabilities
+        self.unit_probabilities = unit_probabilities
         self.norm_elongation = norm_elongation
         self.backend_args = backend_args
 
@@ -655,6 +657,8 @@ class LoadPointsFromFile(BaseTransform):
         points = self._load_points(pts_file_path)
         points = points.reshape(-1, self.load_dim)
         points = points[:, self.use_dim]
+        if self.unit_probabilities:
+            points[:, 3] = 1.
         if self.norm_probabilities:
             assert self.load_dim >= 7, \
                 f'When using probabilities norm, expect load dimensions >= 7, got {self.load_dim}'  # noqa: E501
