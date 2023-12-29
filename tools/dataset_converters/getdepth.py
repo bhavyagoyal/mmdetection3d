@@ -16,13 +16,14 @@ sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_compression/32/'
+OUTFOLDER = BASE + '../points_cfwsp/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
-CORRECTNESS_THRESH = 50
+CORRECTNESS_THRESH = 25
+SAMPLED_POINTS=50000
 
 scenes = open(BASE + 'all_data_idx.txt').readlines()
 scenes = [x.strip() for x in scenes]
@@ -62,7 +63,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'npeaks-confidence'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -70,6 +71,10 @@ def parse_args():
         choices=['5_1', '5_50', '5_100', '1_50', '1_100'],
         default='1_50',
         help='SBR')
+    parser.add_argument('--num_peaks', default=None, type=int,
+                    help='num peaks for each pixel')
+    parser.add_argument('--outfolder_prefix', default=None, type=str,
+                    help='add prefix to output folder')
     parser.add_argument('--start', default=None, type=int,
                     help='start index for datalist')
     parser.add_argument('--end', default=None, type=int,
@@ -84,8 +89,7 @@ def camera_params(K):
     return cx, cy, fx, fy
 
 nt_compression = 1024
-csph1D_obj = CSPH3DLayer(k=32, num_bins=nt_compression, tblock_init='TruncFourier', optimize_codes=False, encoding_type='csph1d', zero_mean_tdim_codes=True)
-csph1D_obj.to(device='cpu')
+csph1D_obj = None
 
 # Does compression and decompression
 def decompress(spad):
@@ -98,7 +102,7 @@ def decompress(spad):
 
 
 # Find peaks and converts to point cloud
-def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, decompressed=False):
+def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peaks_post_processing=True, decompressed=False):
     xx = np.linspace(1, nc, nc)
     yy = np.linspace(1, nr, nr)
     x, y = np.meshgrid(xx, yy)
@@ -120,7 +124,10 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, deco
         for ii in range(1, nr+1):
             for jj in range(1, nc+1):
                 #peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS_START]
-                peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.3)[0][:NUM_PEAKS_START]
+                if(peaks_post_processing):
+                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.3)[0][:NUM_PEAKS_START]
+                else:
+                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10)[0][:NUM_PEAKS_START]
                 allpeaks[ii-1,jj-1,:len(peaks)]=peaks
     
         spad[:,:,0] = 0
@@ -136,11 +143,11 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, deco
         allpeaks = dp[1,:,:,:]
         allpeaks = allpeaks[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
     
-
     density = density[:,:,:NUM_PEAKS]
     allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
+    #print('All Peaks ', np.count_nonzero(allpeaks==0))
 
-    if(not decompressed):
+    if(peaks_post_processing):
         maxdensity = density.max(axis=-1, keepdims=True)
         removepeaks = density<(maxdensity-0.5)
         density[removepeaks]=0.
@@ -149,6 +156,9 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, deco
     total_sampling_prob = density.sum(-1, keepdims=True)
     total_sampling_prob[total_sampling_prob<1e-9]=1
     sampling_prob = density/total_sampling_prob
+    # we might drop a few points later, if they are farther than 65.356 depth
+    # which would make sum non 1, but ignoring that for now.
+
 
     # Can remove points that are too close to camera
     # Few examples that I saw, 58 was the min bin count
@@ -189,6 +199,11 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, deco
     dists = tof2depth(allpeaks*bin_size)
     depths = dists/(xa**2 + ya**2 + 1)**0.5
 
+    #print(allpeaks[73,313,:])
+    #print(dists[73,313,:])
+    #print(depths[73,313,:])
+    #print(np.count_nonzero(depths==0))
+
     depths = depths*1000.
     depths = depths.astype(np.uint16)
     depths = (depths>>3)<<3
@@ -200,6 +215,23 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, deco
     X = xa*depths
     Y = ya*depths
     Z = depths
+
+    #AA = set(zip(*np.nonzero(Z==0)))
+    #AA2 = set(zip(*np.nonzero(X==0)))
+    #AA3 = set(zip(*np.nonzero(Y==0)))
+    #BB = set(zip(*np.nonzero(dists==0)))
+    #gtvalidthree = np.tile(gtvalid[:,:,None],3)
+    #CC = set(zip(*np.nonzero(gtvalidthree==0)))
+    #DD = AA - (CC|BB)
+    #DD2 = AA2 - (CC|BB)
+    #DD3 = AA3 - (CC|BB)
+    #print(len(BB), sorted(list(BB)))
+    #print(len(AA), len(BB), len(CC))
+    #print(len(DD), sorted(list(DD)))
+    #print(len(DD2), sorted(list(DD2)))
+    #print(len(DD3), sorted(list(DD3)))
+    #print(depths[73,313,:])
+
     points3d = np.stack([X, Z, -Y])
     points3d, density, sampling_prob = points3d.reshape((3,-1)), density.flatten(), sampling_prob.flatten()
     points3d = np.matmul(Rtilt, points3d)
@@ -217,6 +249,7 @@ def finaldepth(nr, nc, K, dist, gtvalid):
     depthmap = depthmap*1000.
     depthmap = depthmap.astype(np.uint16)
     # Not sure why SUNRGBD code for converting to point cloud (read3dPoints.m) shifts last 3 bits, but I am zeroing it out for now
+    # This removes points that are farther than 65.535 because np.uint16 would have wrapped for those numbers
     depthmap = (depthmap>>3)<<3
     depthmap = depthmap*gtvalid
     return depthmap
@@ -271,10 +304,20 @@ def main(args):
         start = args.start
     if(args.end is not None):
         end = args.end
+    if(args.num_peaks):
+        global NUM_PEAKS
+        NUM_PEAKS = args.num_peaks
+    if(args.outfolder_prefix):
+        global OUTFOLDER
+        OUTFOLDER = OUTFOLDER + args.outfolder_prefix + '/'
 
     outfolder = OUTFOLDER + args.method + '/' + args.sbr + '/'
     if not os.path.exists(outfolder):
         os.makedirs(outfolder)
+
+    if('decompress' in args.method):
+        csph1D_obj = CSPH3DLayer(k=32, num_bins=nt_compression, tblock_init='TruncFourier', optimize_codes=False, encoding_type='csph1d', zero_mean_tdim_codes=True)
+        csph1D_obj.to(device='cpu')
 
     all_correct_cf, all_incorrect_cf = [], []
     all_correct_neighcount, all_incorrect_neighcount = [], []
@@ -371,8 +414,11 @@ def main(args):
         elif(args.method == 'peaks-confidence'):
             points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
+        elif(args.method == 'npeaks-confidence'):
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
+            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         elif(args.method == 'decompressed-peaks-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True)
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True, peaks_post_processing = False)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1) 
         else:
             print('not implemented yet')
@@ -387,35 +433,39 @@ def main(args):
         correct = correct[valid]
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
-    
+
+        #if(args.method=='npeaks-confidence'):
+        #    num_points = SAMPLED_POINTS * NUM_PEAKS
+        #else:
+        #    num_points = SAMPLED_POINTS
+        num_points = SAMPLED_POINTS
         if(sampling_prob is not None):
             sampling_prob = sampling_prob[valid]
-            points3d, choices = random_sampling(points3d, 50000, p=sampling_prob/sampling_prob.sum())
+            points3d, choices = random_sampling(points3d, num_points, p=sampling_prob/sampling_prob.sum())
             #negprobs = -1*sampling_prob[choices]
             #newchoices = negprobs.argsort()
             #choices = choices[newchoices]
             #points3d = points3d[newchoices]
             sampling_prob = sampling_prob[choices]
         else:
-            points3d, choices = random_sampling(points3d, 50000)
+            points3d, choices = random_sampling(points3d, num_points)
 
         if(density is not None):
             density = density[choices]
         rgb = rgb[choices]
         correct = correct[choices]
 
-        #points3d_rgb = np.concatenate([points3d, rgb], axis=1)
         if(sampling_prob is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
         elif(density is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
         else:
             points3d_rgb = np.concatenate([points3d, rgb], axis=1)
-
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
         #points_sp = torch.from_numpy(points3d_rgb[:,4]).cuda()[None, :]
-
+        ##points_probs = torch.ones(points3d_rgb.shape[0]).cuda()[None, :]
+        ##points_sp = torch.ones(points3d_rgb.shape[0]).cuda()[None, :]
 
         #cfmax = max(cfmax, points_probs.max())
         ##points_probs = points_probs/points_probs.max()
@@ -466,30 +516,31 @@ def main(args):
         #cv2.imwrite(outfolder + scene.zfill(6) + '.png', depthmap)
     
     #UPPER = int((cfmax+0.5)*100)
-    #IMAGE_DIR = 'figs_updated_sorted50'
-    #plt.close()
     #bins = [x*0.01 for x in range(UPPER)]
+    ##UPPER = int((cfmax+0.5))
+    ##bins = [x for x in range(UPPER)]
+    #IMAGE_DIR = 'figs_argmaxallprob1'
+
+    #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_cf, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/pointcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+
+    #plt.close()
+    #plt.hist(all_correct_neighcf, bins, color='g', alpha=0.5)
+    #plt.hist(all_incorrect_neighcf, bins, color='r', alpha=0.5)
+    #plt.savefig(IMAGE_DIR + '/neighcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #
+    #plt.close()
+    #plt.hist(all_correct_neighcfweighted, bins, color='g', alpha=0.5)
+    #plt.hist(all_incorrect_neighcfweighted, bins, color='r', alpha=0.5)
+    #plt.savefig(IMAGE_DIR + '/neighcfweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = range(MAX_BALL_NEIGHBORS+2)
     #plt.hist(all_correct_neighcount, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighcount, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
-    #    
-    #plt.close()
-    #bins = [x*0.01 for x in range(UPPER)]
-    #plt.hist(all_correct_neighcf, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_neighcf, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/neighcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
-    #
-    #plt.close()
-    #bins = [x*0.01 for x in range(UPPER)]
-    #plt.hist(all_correct_neighcfweighted, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_neighcfweighted, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/neighcfweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = [x*0.01 for x in range(101)]

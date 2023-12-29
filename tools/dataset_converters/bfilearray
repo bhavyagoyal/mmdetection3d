@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-104%5
+#SBATCH --array=1-104%10
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
@@ -28,6 +28,7 @@ conda activate openmmlab
 START=$((($SLURM_ARRAY_TASK_ID-1)*100))
 END=$((($SLURM_ARRAY_TASK_ID)*100))
 
-python -u getdepth.py --method=decompressed-peaks-confidence --sbr=5_50 --start $START --end $END
+python -u getdepth.py --method=peaks-confidence --sbr=1_50 --start $START --end $END  --num_peaks 3 --outfolder_prefix "3"
+
 
 
