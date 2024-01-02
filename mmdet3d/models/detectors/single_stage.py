@@ -170,6 +170,7 @@ class SingleStage3DDetector(Base3DDetector):
         """
         points = batch_inputs_dict['points']
         stack_points = torch.stack(points)
+        K = 1000
         
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
@@ -198,7 +199,7 @@ class SingleStage3DDetector(Base3DDetector):
             # This updates stack_points
             stack_points_xyzfh = stack_points[...,:4]
             stack_points_feat = stack_points[...,4:]
-            stack_points_xyzfh[ignore_points]=-1000
+            stack_points_xyzfh[ignore_points]=-K
             stack_points_feat[ignore_points]=0
 
             neighbor_probs[ignore_points]=0
@@ -214,7 +215,21 @@ class SingleStage3DDetector(Base3DDetector):
                 choices = torch.argsort(neighbor_probs, descending=True)
             stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
             
+            # Remove points that are zero probability from filtering step
+            # Since mini batch will have different number of points now
+            # only remove from maximum index of zero probability in the batch
+            values = torch.zeros(stack_points.shape[0],1).cuda()
+            crop_index = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
+            stack_points = stack_points[:,:crop_index.max(),:]
+            #print(crop_index.max())
 
+            # Set the rest of the points to the first point
+            # replace points with -K value to K+firstpoint
+            mask = (stack_points == -K)
+            #print(mask.sum())
+            first_point = stack_points[:,:1,:].tile(1,stack_points.shape[1],1)+K
+            first_point = first_point*(mask.int())
+            stack_points += first_point
         #if(evaluating):
 
         if(self.updated_fps):
@@ -222,8 +237,11 @@ class SingleStage3DDetector(Base3DDetector):
             values = torch.ones(stack_points.shape[0],1).cuda()*-1*self.updated_fps
             new_fps = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
             new_fps = new_fps.median()
-            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps
+            #print(new_fps)
+            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[0] else -1
 
+        #sleep(5)
+        #exit(0)
         stack_points = stack_points[:,:,:self.backbone.in_channels]
         batch_inputs_dict['points'] = torch.unbind(stack_points)
         #x = self.backbone(stack_points, choices)

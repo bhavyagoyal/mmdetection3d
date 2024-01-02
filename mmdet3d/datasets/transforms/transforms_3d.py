@@ -1102,7 +1102,7 @@ class PointSample(BaseTransform):
             probs = points.tensor[:,4]
             choices = np.argsort(-1*probs)[:num_samples]
         elif(self.firstk_sampling):
-            choices = np.range(num_samples)
+            choices = np.arange(num_samples)
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
 

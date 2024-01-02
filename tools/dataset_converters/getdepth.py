@@ -11,6 +11,8 @@ import random
 import torch
 from mmcv.ops.ball_query import ball_query
 import copy
+import skimage.filters
+
 
 sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
@@ -63,7 +65,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'npeaks-confidence'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -102,7 +104,7 @@ def decompress(spad):
 
 
 # Find peaks and converts to point cloud
-def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peaks_post_processing=True, decompressed=False):
+def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peaks_post_processing=True, decompressed=False, gaussian_filter_pulse=False):
     xx = np.linspace(1, nc, nc)
     yy = np.linspace(1, nr, nr)
     x, y = np.meshgrid(xx, yy)
@@ -116,6 +118,12 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peak
         # compress and decompress using truncated fourier
         spad_copy = copy.deepcopy(spad)
         spad = decompress(spad)
+    elif(gaussian_filter_pulse):
+        gf_pulse = np.zeros((5,5,22))
+        gf_pulse[2,2,:] = pulse[0][0]
+        gf_pulse = skimage.filters.gaussian(gf_pulse,sigma=1.0)
+        gf_pulse = gf_pulse/gf_pulse.sum()
+        spad = scipy.signal.convolve(spad, gf_pulse, mode='same')
     else:
         spad = scipy.signal.convolve(spad, pulse, mode='same')
 
@@ -414,8 +422,11 @@ def main(args):
         elif(args.method == 'peaks-confidence'):
             points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
-        elif(args.method == 'npeaks-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
+        elif(args.method == 'gaussfilter-peaks-confidence'):
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], gaussian_filter_pulse=True, peaks_post_processing=False)
+            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
+        elif(args.method == 'peakswogtvalid-confidence'):
+            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, np.ones_like(gtvalid), Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         elif(args.method == 'decompressed-peaks-confidence'):
             points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True, peaks_post_processing = False)
@@ -434,10 +445,6 @@ def main(args):
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
 
-        #if(args.method=='npeaks-confidence'):
-        #    num_points = SAMPLED_POINTS * NUM_PEAKS
-        #else:
-        #    num_points = SAMPLED_POINTS
         num_points = SAMPLED_POINTS
         if(sampling_prob is not None):
             sampling_prob = sampling_prob[valid]
