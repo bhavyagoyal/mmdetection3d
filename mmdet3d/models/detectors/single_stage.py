@@ -238,7 +238,7 @@ class SingleStage3DDetector(Base3DDetector):
             new_fps = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
             new_fps = new_fps.median()
             #print(new_fps)
-            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[0] else -1
+            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[1] else -1
 
         #sleep(5)
         #exit(0)
