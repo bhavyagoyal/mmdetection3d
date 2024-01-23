@@ -662,6 +662,7 @@ class LoadPointsFromFile(BaseTransform):
         if self.norm_probabilities:
             assert self.load_dim >= 7, \
                 f'When using probabilities norm, expect load dimensions >= 7, got {self.load_dim}'  # noqa: E501
+            #points[:,3] = points[:, 3].clip(None, 25)
             points[:, 3] /= points[:, 3].max()
         if self.norm_intensity:
             assert len(self.use_dim) >= 4, \

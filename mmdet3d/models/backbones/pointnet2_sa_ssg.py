@@ -119,8 +119,9 @@ class PointNet2SASSG(BasePointNet):
         indices = xyz.new_tensor(range(num_points)).unsqueeze(0).repeat(
             batch, 1).long()
 
+        point_features = features
         sa_xyz = [xyz]
-        sa_features = [features]
+        sa_features = [features[:,:self.in_channels-3,:]]
         sa_indices = [indices]
 
         for i in range(self.num_sa):
@@ -155,5 +156,6 @@ class PointNet2SASSG(BasePointNet):
             fp_indices=fp_indices,
             sa_xyz=sa_xyz,
             sa_features=sa_features,
+            point_features=point_features,
             sa_indices=sa_indices)
         return ret
