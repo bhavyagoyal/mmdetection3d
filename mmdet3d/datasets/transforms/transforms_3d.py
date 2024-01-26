@@ -19,7 +19,7 @@ from mmdet3d.structures import (CameraInstance3DBoxes, DepthInstance3DBoxes,
 from mmdet3d.structures.ops import box_np_ops
 from mmdet3d.structures.points import BasePoints
 from .data_augment_utils import noise_per_object_v3_
-
+from itertools import islice, cycle
 
 @TRANSFORMS.register_module()
 class RandomDropPointsColor(BaseTransform):
@@ -1033,6 +1033,7 @@ class PointSample(BaseTransform):
                  probability_sampling: bool = False,
                  topk_sampling: bool = False,
                  firstk_sampling: bool = False,
+                 thresh_sampling: float = None,
                  pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
@@ -1042,6 +1043,7 @@ class PointSample(BaseTransform):
         self.probability_sampling = probability_sampling
         self.topk_sampling = topk_sampling
         self.firstk_sampling = firstk_sampling
+        self.thresh_sampling = thresh_sampling
         self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1103,6 +1105,11 @@ class PointSample(BaseTransform):
             choices = np.argsort(-1*probs)[:num_samples]
         elif(self.firstk_sampling):
             choices = np.arange(num_samples)
+        elif(self.thresh_sampling is not None):
+            probs = points.tensor[:,4]
+            probs_selected = np.where(probs>self.thresh_sampling)[0]
+            choices = np.array(list(islice(cycle(probs_selected), num_samples)))
+            assert np.array_equal(choices, np.arange(num_samples))==True
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
 
