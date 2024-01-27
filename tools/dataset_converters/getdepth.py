@@ -18,9 +18,9 @@ sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_cfwsp/'
+OUTFOLDER = BASE + '../points_min2/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
-GEN_FOLDER = 'processed_full_lowfluxlowsbr/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
 NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
 NUM_PEAKS_START = 110
@@ -75,6 +75,8 @@ def parse_args():
         help='SBR')
     parser.add_argument('--num_peaks', default=None, type=int,
                     help='num peaks for each pixel')
+    parser.add_argument('--threshold', default=None, type=float,
+                    help='threshold for spad filtering')
     parser.add_argument('--outfolder_prefix', default=None, type=str,
                     help='add prefix to output folder')
     parser.add_argument('--start', default=None, type=int,
@@ -113,6 +115,8 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peak
     ya = (y - cy)/fy
     xa, ya = xa[:,:,np.newaxis], ya[:,:,np.newaxis]
     nt = spad.shape[2]
+    # Removing first few bins
+    spad[:,:,:5] = 0
 
     if(decompressed):
         # compress and decompress using truncated fourier
@@ -135,10 +139,11 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peak
                 if(peaks_post_processing):
                     peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.3)[0][:NUM_PEAKS_START]
                 else:
-                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10)[0][:NUM_PEAKS_START]
+                    # Use height 0 as after convolve, spad can have very small negative numbers instead of 0
+                    # it uses fourier transform for fast calculation
+                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.)[0][:NUM_PEAKS_START]
                 allpeaks[ii-1,jj-1,:len(peaks)]=peaks
     
-        spad[:,:,0] = 0
         allpeaks = allpeaks.astype(int)
         density = spad[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], allpeaks]
     
@@ -377,6 +382,9 @@ def main(args):
         #spad = argmaxrandomtie(spad)
         if(args.method=='argmax-filtering-conf'):
             spad, density = argmaxfiltering(spad)
+            if(args.threshold is not None):
+                thresh_mask = density>=args.threshold
+                spad, density = spad*thresh_mask, density*thresh_mask
             density = density.reshape(-1)
             correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
     

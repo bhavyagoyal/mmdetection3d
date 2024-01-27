@@ -16,6 +16,7 @@ module load anaconda/mini/23.3.1
 bootstrap_conda
 conda activate openmmlab
 
-python -u getdepth.py --method=gaussfilter-peaks-confidence --sbr=1_50 --start 5049 --end 5050 --num_peaks 2 --outfolder_prefix "2"
+python -u getdepth_working.py --method=argmax-filtering-conf --sbr=1_50 --start 5040 --end 5050 --threshold 0.3
+# --num_peaks 1 --outfolder_prefix "1"
 
 
