@@ -181,7 +181,8 @@ class BasePointSAModule(nn.Module):
         self,
         points_xyz: Tensor,
         features: Optional[Tensor] = None,
-        choices: Optional[Tensor] = None,
+        points_xyz_nonfps: Optional[Tensor] = None,
+        features_nonfps: Optional[Tensor] = None,
         indices: Optional[Tensor] = None,
         target_xyz: Optional[Tensor] = None,
     ) -> Tuple[Tensor]:
@@ -208,15 +209,15 @@ class BasePointSAModule(nn.Module):
         """
         new_features_list = []
 
-        if(choices is not None):
-            points_xyz_choices = torch.gather(points_xyz, 1, choices[:,:,None].tile(3))
-            features_choices = torch.gather(features, 2, choices[:,None,:].tile(1, features.shape[1], 1))
+        if(points_xyz_nonfps is not None):
+            points_xyz_gather = points_xyz_nonfps
+            features_gather = features_nonfps
         else:
-            points_xyz_choices = points_xyz
-            features_choices = features
+            points_xyz_gather = points_xyz
+            features_gather = features
             
         # sample points, (B, num_point, 3), (B, num_point)
-        new_xyz, indices = self._sample_points(points_xyz_choices, features_choices, indices,
+        new_xyz, indices = self._sample_points(points_xyz, features, indices,
                                                target_xyz)
 
         for i in range(len(self.groupers)):
@@ -224,7 +225,7 @@ class BasePointSAModule(nn.Module):
             # - grouped_features: (B, C, num_point, nsample)
             # - grouped_xyz: (B, 3, num_point, nsample)
             # - grouped_idx: (B, num_point, nsample)
-            grouped_results = self.groupers[i](points_xyz, new_xyz, features)
+            grouped_results = self.groupers[i](points_xyz_gather, new_xyz, features_gather)
 
             # (B, mlp[-1], num_point, nsample)
             new_features = self.mlps[i](grouped_results)

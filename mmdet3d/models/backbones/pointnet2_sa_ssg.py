@@ -96,7 +96,7 @@ class PointNet2SASSG(BasePointNet):
                 fp_source_channel = cur_fp_mlps[-1]
                 fp_target_channel = skip_channel_list.pop()
 
-    def forward(self, points: Tensor, points_choices: Tensor = None) -> Dict[str, List[Tensor]]:
+    def forward(self, points: Tensor, points_nonfps: Tensor = None) -> Dict[str, List[Tensor]]:
         """Forward pass.
 
         Args:
@@ -114,6 +114,10 @@ class PointNet2SASSG(BasePointNet):
                     input points.
         """
         xyz, features = self._split_point_feats(points)
+        xyz_nonfps, features_nonfps = None, None
+        if(points_nonfps!=None):
+            xyz_nonfps, features_nonfps = self._split_point_feats(points_nonfps)
+            features_nonfps = features_nonfps[:,:self.in_channels-3,:]
 
         batch, num_points = xyz.shape[:2]
         indices = xyz.new_tensor(range(num_points)).unsqueeze(0).repeat(
@@ -127,7 +131,7 @@ class PointNet2SASSG(BasePointNet):
         for i in range(self.num_sa):
             if(i==0):
                 cur_xyz, cur_features, cur_indices = self.SA_modules[i](
-                    sa_xyz[i], sa_features[i], points_choices)
+                    sa_xyz[i], sa_features[i], xyz_nonfps, features_nonfps)
             else:
                 cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                     sa_xyz[i], sa_features[i])

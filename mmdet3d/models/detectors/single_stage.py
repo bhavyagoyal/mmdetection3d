@@ -44,6 +44,8 @@ class SingleStage3DDetector(Base3DDetector):
                  data_preprocessor: OptConfigType = None,
                  neighbor_score: float = None,
                  updated_fps: float = None,
+                 new_fps_strat: bool = False,
+                 shuffle_stack: bool = False,
                  weighted_filtering_score: bool = False,
                  post_sort: int = None,
                  filter_index: int = 5,
@@ -61,6 +63,8 @@ class SingleStage3DDetector(Base3DDetector):
         self.test_cfg = test_cfg
         self.neighbor_score = neighbor_score
         self.updated_fps = updated_fps
+        self.new_fps_strat = new_fps_strat
+        self.shuffle_stack = shuffle_stack
         self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort
         self.filter_index = filter_index
@@ -171,7 +175,8 @@ class SingleStage3DDetector(Base3DDetector):
         points = batch_inputs_dict['points']
         stack_points = torch.stack(points)
         K = 1000
-        
+        B = stack_points.shape[0]
+ 
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,self.filter_index].detach().contiguous()
@@ -208,7 +213,7 @@ class SingleStage3DDetector(Base3DDetector):
             neighbor_probs[ignore_points]=0
             neighbor_probs_weighted[ignore_points]=0
 
-        choices = None
+        stack_points_nonfps = None
         if(self.post_sort is not None):
             if(self.post_sort>=0):
                 choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
@@ -235,18 +240,31 @@ class SingleStage3DDetector(Base3DDetector):
             stack_points += first_point
         #if(evaluating):
 
+        if(self.shuffle_stack):
+            ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
+            stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2]))
+
         if(self.updated_fps):
             #curr_fps = stack_points[:,5000,self.post_sort]
             values = torch.ones(stack_points.shape[0],1).cuda()*-1*self.updated_fps
             new_fps = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
             new_fps = new_fps.median()
             #print(new_fps)
-            self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[1] else -1
+            if(self.new_fps_strat):
+                stack_points_nonfps = stack_points.clone().detach()
+                stack_points = stack_points[:,:new_fps,:]
+
+                ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
+                stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2]))
+                ordering = torch.rand(B, stack_points_nonfps.shape[1], device=stack_points_nonfps.device).argsort(-1)
+                stack_points_nonfps = torch.gather(stack_points_nonfps, 1, ordering[:,:,None].tile(stack_points_nonfps.shape[2]))
+            else:
+                self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[1] else -1
+
 
         batch_inputs_dict['points'] = torch.unbind(stack_points)
-        #stack_points = stack_points[:,:,:self.backbone.in_channels]
-        #x = self.backbone(stack_points, choices)
-        x = self.backbone(stack_points)
+        x = self.backbone(stack_points, stack_points_nonfps)
+        #x = self.backbone(stack_points)
         if self.with_neck:
             x = self.neck(x)
         return x
