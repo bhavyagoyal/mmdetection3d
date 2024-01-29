@@ -1109,7 +1109,6 @@ class PointSample(BaseTransform):
             probs = points.tensor[:,4]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
             choices = np.array(list(islice(cycle(probs_selected), num_samples)))
-            assert np.array_equal(choices, np.arange(num_samples))==True
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
 

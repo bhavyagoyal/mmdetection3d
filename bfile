@@ -5,7 +5,7 @@
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler05,euler24,euler25,euler26,euler27
+#SBATCH --exclude=euler17,euler18,euler05,euler24,euler25,euler26,euler27
 ###SBATCH --exclude=euler01,euler05
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -38,9 +38,9 @@ CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.
 #EXPERIMENT=work_dir_py/compression/32/cf-wsp/5_50/sp01_post_updatedfps05
 #EXPERIMENT=work_dir_py/baselines/argmax_filtering_allprob1/1_50/sp03_testing
 EXPERIMENT=work_dir_py/npeaks/rerun/1peak/1_50/first50000_spupdated03_post_updatedfps05_nspobjweightedeval
-EXPERIMENT=work_dir_py/baselines/argmax-filtering/min2/1_50/0.9/points10000
-EXPERIMENT=work_dir_py/npeaks/min2/2peak/1_50/first50000_spupdated01_post_wshuffle
-# updatedfps06_newfps
+EXPERIMENT=work_dir_py/npeaks/min2/1peak/all4/first50000_spupdated02_post_newfps05
+#updatedfps05_newfps_wofpsshuffle
+#EXPERIMENT=work_dir_py/baselines/argmax-filtering/min2/1_100/thresh20000_075
 #first50000_spupdated01_post_updatedfps07
 #fps20482048512256
 #EXPERIMENT=work_dir_py/compression/32/argmax/5_50/points2048
@@ -50,8 +50,9 @@ CHECKPOINT=${EXPERIMENT}/epoch_36.pth
 #DATAPATH=wsp_cf/peaks-confidence/5_100
 #DATAPATH=points_baseline/argmax-filtering-conf/1_50/
 DATAPATH=points_cfwsp/1/peaks-confidence/1_50/
-DATAPATH=points_min2/0.9/argmax-filtering-conf/1_50/
-DATAPATH=points_min2/2/peaks-confidence/1_50/
+DATAPATH=points_min2/argmax-filtering-conf/1_100/
+#DATAPATH=points_min2/argmax-filtering-conf/5_50/
+DATAPATH=points_min2/1/peaks-confidence/
 #DATAPATH=points_compression/32/decompressed-argmax/5_50/
 #DATAPATH=points_compression/32/decompressed-peaks-confidence/1_50/
 #argmax-filtering-conf/
@@ -88,29 +89,38 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
 	model.backbone.in_channels=4 \
 	train_dataloader.num_workers=4 \
-	model.neighbor_score=0.1 \
+	model.neighbor_score=0.2 \
 	model.filter_index=4 \
 	model.post_sort=4 \
-	model.shuffle_stack=True \
-
-
-
-	#model.updated_fps=0.6 \
-	#model.new_fps_strat=True \
-
-
-
-
-
-
-
-	#val_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.25 \
-	#train_dataloader.dataset.dataset.pipeline.4.thresh_sampling=1.25 \
+	model.updated_fps=0.5 \
+	model.new_fps_strat=True \
+	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50.pkl' \
+	val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50.pkl' \
+	param_scheduler.0.end=12 \
+	param_scheduler.0.milestones=[8,10] \
+	train_cfg.max_epochs=12 \
 
 
 
 
 
+
+	#model.shuffle_stack=True \
+
+
+
+
+
+
+
+
+
+
+
+
+
+	#val_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=0.75 \
+	#train_dataloader.dataset.dataset.pipeline.4.thresh_sampling=0.75 \
 
 	#model.bbox_head.proposals_conf=1 \
 	#model.bbox_head.clip=0.9 \
@@ -119,22 +129,6 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	#train_dataloader.dataset.dataset.pipeline.0.norm_probabilities=True \
 	#val_dataloader.dataset.pipeline.0.norm_probabilities=True \
 
-
-
-
-
-
-
-
-
-
-
-
-	#train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50.pkl' \
-	#val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50.pkl' \
-	#param_scheduler.0.end=12 \
-	#param_scheduler.0.milestones=[8,10] \
-	#train_cfg.max_epochs=12 \
 	#train_dataloader.dataset.dataset.pipeline.4.pre_sort=None \
 	#val_dataloader.dataset.pipeline.1.transforms.2.pre_sort=None \
 	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=True \

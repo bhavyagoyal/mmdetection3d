@@ -11,10 +11,15 @@ module load anaconda/mini/23.3.1
 bootstrap_conda
 conda activate openmmlab
 
-cd work_dir_py/cf-wsp/
+#cd work_dir_py/cf-wsp/
+#cd work_dir_py/npeakswogtvalid/
+cd work_dir_py/npeaks/
+#cd work_dir_py/gaussfilternpeaks/
+#cd work_dir_py/npeaks/
 #cd work_dir_py/cf-wsp/1_50/updated/
 #cd work_dir_py/baselines/argmax_filtering/
 #cd work_dir_py/baselines/
+#cd work_dir_py/compression/
 
 #python ../../../tools/analysis_tools/analyze_logs.py plot_curve updated/fps5000_sp01_post  updated/fps5000_wsp0{02,05,1}*  --eval --out out.pdf
 #python ../../../tools/analysis_tools/analyze_logs.py plot_curve 1_100/top*  --eval --out out.pdf
@@ -34,6 +39,10 @@ cd work_dir_py/cf-wsp/
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve */updated/fps5000_sp01_post_set-1000 */updated/sp01_post  --eval --out out.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve */updated/fps5000_sp01_post_set-1000 */updated/fps5000_post  --eval --out ablationwfiltering.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_50/updated/fps30000_sp01_post_set-1000 5_50/updated/fps30000_post 5_100/updated/fps30000_sp01_post_set-1000  --eval --out ablationwfiltering.pdf
+
+
+
+
 #
 #
 #
@@ -51,7 +60,33 @@ cd work_dir_py/cf-wsp/
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/fps5000_sp01_pos{t,t_set-1000,t_featsp,t_featspbaseline,t_featsp_attnmask} --eval --out out.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 3dcnndenoise-{softmax,argmax}/denoise/1_50/points*  --eval --out out.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/{fps5000_s,s}p01_post  1_50/updated/fps5000_sp01_post_updatedfps{03,04,05,06,07}  --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve all4/updated/sp01_post_updatedfps05_e12 */updated/sp01_post_updatedfps05 ../baselines/argmax_filtering/all4/points*_e12 --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve all4/updated/sp01_post_updatedfps05_e12 */updated/sp01_post_updatedfps05 ../baselines/argmax_filtering/all4/points*_e12 --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 32/argmax/*/points2048 32/cf-wsp/*/sp01_post_updatedfps05 --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../baselines/argmax_filtering_allprob1/1_50/{sp03,sp03_post_updatedfps05} 1_50/updated/sp01_post_updatedfps05 --eval --keys mAP_0.50 mAR_0.50 chair_AP_0.50 chair_rec_0.50 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1peak/1_50/{points2048,first2048,first10000_sp01_post_updatedfps05} 2peak/1_50/first{4096,20000}_sp01_post_updatedfps05 3peak/1_50/first30000_sp01_post_updatedfps05  --eval --out out.pdf
+
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/5_50/first10000 rerun/1peak/5_50/first10000_spupdated01_post_updatedfps05 rerun/2peak/5_50/first20000_spupdated01_post_updatedfps05   --eval --keys mAP_0.50 mAR_0.50 --out 5_50.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/5_50/first10000 rerun/1peak/5_50/first20000_spupdated01_post_updatedfps05 rerun/2peak/5_50/first40000_spupdated01_post_updatedfps05   --eval --keys mAP_0.50 mAR_0.50 --out 5_50_more.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/1_50/first2048 rerun/1peak/1_50/first10000_spupdated01_post_updatedfps05 rerun/2peak/1_50/first20000_spupdated01_post_updatedfps05  --eval --keys mAP_0.25 mAR_0.25 --out 1_50.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/1_50/first2048 rerun/1peak/1_50/first20000_spupdated01_post_updatedfps05 rerun/2peak/1_50/first50000_spupdated01_post_updatedfps05  --eval --keys mAP_0.25 mAR_0.25 --out 1_50_more.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/1_50/first50000_spupdated03_post_updatedfps05 rerun/1peak/1_50/first50000_cfupdated02_post_updatedfpscf05_repeat --eval --keys mAP_0.25 --out 1_50_cf.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/1_50/first50000_spupdated03_post_updatedfps05* rerun/1peak/1_50/first50000_cfupdated0{1,2}_post_updatedfpscf05* --eval --keys mAP_0.25 --out 1_50_feat.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve rerun/1peak/1_50/first50000_spupdated03_post_updatedfps05 rerun/1peak/1_50/first50000_cfupdated02_post_updatedfpscf05 --eval --keys mAP_0.25 --out 1_50_feat.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve min2/1peak/1_50/first*  --eval --keys mAP_0.25 --out 1_50_min2_1peak.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve min2/2peak/1_50/*spupdated01_*fps06* min2/2peak/1_50/*_{w,wo}shuffle   --eval --keys mAP_0.25 --out 1_50_min2_2peak.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussfilternpeaks/min2/1peak/1_50/first50000_spupdated02_post_updatedfps05 min2/1peak/1_50/first50000_spupdated03_post_updatedfps05  ../gaussfilternpeaks/min2/2peak/1_50/first50000_spupdated01_post_updatedfps05 min2/2peak/1_50/first50000_spupdated01_post_updatedfps06   --eval --keys mAP_0.25 --out 1_50_peakcomp.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussfilternpeaks/min2/*peak/1_50/first50000_spupdated0*_post_updatedfps0*  --eval --keys mAP_0.25 --out 1_50_gaussfilternpeaks.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve min2/*peak/1_50/first50000_spupdated01_post_newfps06 ../baselines/argmax-filtering/min2/*/thresh20000_10  --eval --keys mAP_0.25 --out bigcomp.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve ../baselines/argmax-filtering/min2/*/thresh20000_10  ../baselines/argmax-filtering/min2/1_50/{06/*,09/*,10/*,125/*,15/*}  --eval --keys mAP_0.25 --out 1_50_min2_thresh.pdf
+
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve *peak/1_50/first{2048,4096,6144}_sp01_post_updatedfps05  --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 3peak/1_50/first30000_s{p,pupdated}01_post_updated*fps05*  --eval --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/updated/sp01_post_updatedfps0{5_repeat,5_repeat2} 1_50/updated/s{p,pmin,pmax}updated01_post_updatedfps05 1_50/updated/spupdated01_post_updatedminfps05 1_50/updated/spmedian01_post_updatedfps05  --eval --keys mAP_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 5_50/updated/sp01_post_updatedfps0{5_repeat,5_repeat2} 5_50/updated/s{p,pmin,pmax}updated01_post_updatedfps05 5_50/updated/spupdated01_post_updatedminfps05 5_50/updated/spmedian01_post_updatedfps05  --eval --keys mAP_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve *_*/updated/spmedian01_post_updatedfps05 *_*/updated/sp01_post_updatedfps0{5,5_latest}   --eval --keys mAP_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve {5_50,1_50}/rerun/s{p,pupdated}01_post_updatedfps05   --eval --keys mAP_0.25 mAR_0.25 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../../baselines/gtdepth/points* --eval --keys mAP_0.25 mAP_0.50 --out out.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve *peak/1_50/first* --eval --keys mAP_0.25 mAP_0.50 --out out.pdf
 #
 #
 #
