@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-104%10
+#SBATCH --array=21-104%10
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
@@ -30,9 +30,12 @@ END=$((($SLURM_ARRAY_TASK_ID)*100))
 #START=$((($SLURM_ARRAY_TASK_ID-1)*10+1200))
 #END=$((($SLURM_ARRAY_TASK_ID)*10+1200))
 
-python -u getdepth.py --method=argmax-filtering-conf --sbr=1_50 --start $START --end $END --threshold 1.0 --outfolder_prefix "1.0"
+python -u getdepth.py --method=peaks-confidence --sbr=1_50 --start $START --end $END --num_peaks 2 --outfolder_prefix "2" 
 
-# --num_peaks 1 --outfolder_prefix "1"
+# --threshold 2.0 --outfolder_prefix "2.0"
+
+
+
 
 
 

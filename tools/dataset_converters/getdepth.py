@@ -18,7 +18,7 @@ sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_min2/'
+OUTFOLDER = BASE + '../points_min2_allpeaks/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
@@ -248,7 +248,7 @@ def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peak
     points3d = np.stack([X, Z, -Y])
     points3d, density, sampling_prob = points3d.reshape((3,-1)), density.flatten(), sampling_prob.flatten()
     points3d = np.matmul(Rtilt, points3d)
-    return points3d, density, sampling_prob, correct
+    return points3d, density, sampling_prob, correct, np.tile(xa, NUM_PEAKS).flatten(), np.tile(ya, NUM_PEAKS).flatten()
 
 # Convert dist to depth
 def finaldepth(nr, nc, K, dist, gtvalid):
@@ -428,16 +428,16 @@ def main(args):
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
 
         elif(args.method == 'peaks-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
+            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         elif(args.method == 'gaussfilter-peaks-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], gaussian_filter_pulse=True, peaks_post_processing=False)
+            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], gaussian_filter_pulse=True, peaks_post_processing=False)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         elif(args.method == 'peakswogtvalid-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, np.ones_like(gtvalid), Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
+            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, np.ones_like(gtvalid), Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
         elif(args.method == 'decompressed-peaks-confidence'):
-            points3d, density, sampling_prob, correct = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True, peaks_post_processing = False)
+            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True, peaks_post_processing = False)
             rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1) 
         else:
             print('not implemented yet')
@@ -456,7 +456,22 @@ def main(args):
         num_points = SAMPLED_POINTS
         if(sampling_prob is not None):
             sampling_prob = sampling_prob[valid]
-            points3d, choices = random_sampling(points3d, num_points, p=sampling_prob/sampling_prob.sum())
+            xa,ya = xa[valid], ya[valid]
+
+            # xa, ya is pixel cordinates
+            # Sampling num_points pixels and then selecting all peak from those pixels.
+            # so, this allows sampling number of pixels rather than points.
+            xya = list( zip(xa,ya) )
+            all_xya = list( set( xya ) )
+            selected_xy = set(random.sample(all_xya, num_points))
+            choices = []
+            for xy_idx, xy in enumerate(xya):
+                if(xy in selected_xy):
+                    choices.append(xy_idx)
+            points3d = points3d[choices]
+
+            # Earlier I was sampling by sampling_prob, but this does not ensure all peaks from a pixel are included
+            #points3d, choices = random_sampling(points3d, num_points, p=sampling_prob/sampling_prob.sum())
             #negprobs = -1*sampling_prob[choices]
             #newchoices = negprobs.argsort()
             #choices = choices[newchoices]
