@@ -251,8 +251,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             raise NotImplementedError
 
         # create coordinate frame
-        mesh_frame = geometry.TriangleMesh.create_coordinate_frame(**frame_cfg)
-        self.o3d_vis.add_geometry(mesh_frame)
+        #mesh_frame = geometry.TriangleMesh.create_coordinate_frame(**frame_cfg)
+        #self.o3d_vis.add_geometry(mesh_frame)
 
         pcd.colors = o3d.utility.Vector3dVector(points_colors)
         self.o3d_vis.add_geometry(pcd)
@@ -865,6 +865,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             self.o3d_vis.update_renderer()
             self.view_port = \
                 self.view_control.convert_to_pinhole_camera_parameters()  # noqa: E501
+            self.view_control.set_front([0,-1,0])
+            #self.view_control.set_lookat([0,4,0])
+            self.view_control.set_up([0,0,1])
             if wait_time != -1:
                 self.last_time = time.time()
                 while time.time(
