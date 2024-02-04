@@ -63,7 +63,7 @@ class Det3DVisualizationHook(Hook):
                  test_out_dir: Optional[str] = None,
                  draw_gt: bool = False,
                  draw_pred: bool = True,
-                 show_pcd_rgb: bool = False,
+                 show_pcd_rgb: bool = True,
                  backend_args: Optional[dict] = None):
         self._visualizer: Visualizer = Visualizer.get_current_instance()
         self.interval = interval

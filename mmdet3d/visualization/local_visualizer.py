@@ -243,7 +243,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                 points_colors = points_color
         elif mode == 'xyzrgb':
             pcd.points = o3d.utility.Vector3dVector(points[:, :3])
-            points_colors = points[:, 3:6]
+            points_colors = points[:, -3:]
             # normalize to [0, 1] for Open3D drawing
             if not ((points_colors >= 0.0) & (points_colors <= 1.0)).all():
                 points_colors /= 255.0
@@ -664,7 +664,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
 
             self.set_points(
                 points, pcd_mode=2, mode='xyzrgb' if show_pcd_rgb else 'xyz')
-            self.draw_bboxes_3d(bboxes_3d_depth, bbox_color=colors)
+            self.draw_bboxes_3d(bboxes_3d_depth, bbox_color=colors,
+                mode='xyzrgb' if show_pcd_rgb else 'xyz')
 
             data_3d['bboxes_3d'] = tensor2ndarray(bboxes_3d_depth.tensor)
             data_3d['points'] = points
@@ -882,7 +883,6 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                     self.view_port = \
                         self.view_control.convert_to_pinhole_camera_parameters()  # noqa: E501
                 self.flag_next = False
-            self.o3d_vis.clear_geometries()
             try:
                 del self.pcd
             except (KeyError, AttributeError):
@@ -891,7 +891,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                 if not (save_path.endswith('.png')
                         or save_path.endswith('.jpg')):
                     save_path += '.png'
-                self.o3d_vis.capture_screen_image(save_path)
+                self.o3d_vis.capture_screen_image(save_path, True)
+            self.o3d_vis.clear_geometries()
             if self.flag_exit:
                 self.o3d_vis.destroy_window()
                 self.o3d_vis.close()

@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from argparse import ArgumentParser
+from mmengine.config import Config, ConfigDict, DictAction
 
 from mmdet3d.apis import inference_detector, init_model
 from mmdet3d.registry import VISUALIZERS
@@ -24,14 +25,24 @@ def parse_args():
         '--snapshot',
         action='store_true',
         help='whether to save online visualization results')
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'is allowed.')
     args = parser.parse_args()
     return args
 
 
 def main(args):
+    cfg = Config.fromfile(args.config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
+
     # TODO: Support inference of point cloud numpy file.
     # build the model from a config file and a checkpoint file
-    model = init_model(args.config, args.checkpoint, device=args.device)
+    model = init_model(cfg, args.checkpoint, device=args.device)
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
@@ -50,11 +61,14 @@ def main(args):
         draw_gt=False,
         show=args.show,
         wait_time=-1,
-        out_file=args.out_dir,
+        #out_file=args.out_dir,
+        show_pcd_rgb=True,
+        o3d_save_path=args.out_dir,
         pred_score_thr=args.score_thr,
         vis_task='lidar_det')
 
 
 if __name__ == '__main__':
     args = parse_args()
+
     main(args)

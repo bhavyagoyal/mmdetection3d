@@ -215,7 +215,7 @@ class Pack3DDetInputs(BaseTransform):
                             img_metas.append(results['images'][cam_type][key])
                     if len(img_metas) > 0:
                         data_metas[key] = img_metas
-            elif 'lidar_points' in results:
+            if 'lidar_points' in results:
                 if key in results['lidar_points']:
                     data_metas[key] = results['lidar_points'][key]
         data_sample.set_metainfo(data_metas)
