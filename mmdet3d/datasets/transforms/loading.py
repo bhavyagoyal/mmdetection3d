@@ -898,6 +898,7 @@ class LoadAnnotations3D(LoadAnnotations):
             dict: The dict containing loaded 3D bounding box annotations.
         """
 
+        #results['gt_bboxes_3d'] = results['eval_ann_info']['gt_bboxes_3d'] # for vis
         results['gt_bboxes_3d'] = results['ann_info']['gt_bboxes_3d']
         return results
 
@@ -925,6 +926,7 @@ class LoadAnnotations3D(LoadAnnotations):
             dict: The dict containing loaded label annotations.
         """
 
+        #results['gt_labels_3d'] = results['eval_ann_info']['gt_labels_3d'] # for vis
         results['gt_labels_3d'] = results['ann_info']['gt_labels_3d']
         return results
 

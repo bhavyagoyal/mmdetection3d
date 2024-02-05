@@ -858,6 +858,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                                      continue_key)
 
         if hasattr(self, 'o3d_vis'):
+            self.view_control.set_front([0,-1,0])
+            #self.view_control.set_lookat([0,4,0])
+            self.view_control.set_up([0,0,1])
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
                     self.view_port)
@@ -865,9 +868,6 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             self.o3d_vis.update_renderer()
             self.view_port = \
                 self.view_control.convert_to_pinhole_camera_parameters()  # noqa: E501
-            self.view_control.set_front([0,-1,0])
-            #self.view_control.set_lookat([0,4,0])
-            self.view_control.set_up([0,0,1])
             if wait_time != -1:
                 self.last_time = time.time()
                 while time.time(
@@ -997,7 +997,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if 'gt_instances_3d' in data_sample:
                 gt_data_3d = self._draw_instances_3d(
                     data_input, data_sample.gt_instances_3d,
-                    data_sample.metainfo, vis_task, show_pcd_rgb, palette)
+                    data_sample.metainfo, vis_task, show_pcd_rgb, 'green')
             if 'gt_instances' in data_sample:
                 if len(data_sample.gt_instances) > 0:
                     assert 'img' in data_input

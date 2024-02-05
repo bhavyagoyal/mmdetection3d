@@ -52,6 +52,7 @@ test_pipeline = [
         load_dim=6,
         use_dim=[0, 1, 2],
         backend_args=backend_args),
+    #dict(type='LoadAnnotations3D'), # for vis
     dict(
         type='MultiScaleFlipAug3D',
         img_scale=(1333, 800),
@@ -70,7 +71,7 @@ test_pipeline = [
             ),
             dict(type='PointSample', num_points=20000)
         ]),
-    dict(type='Pack3DDetInputs', keys=['points'])
+    dict(type='Pack3DDetInputs', keys=['points']), #'gt_bboxes_3d', 'gt_labels_3d']) # for vis
 ]
 
 train_dataloader = dict(
