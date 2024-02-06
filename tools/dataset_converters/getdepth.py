@@ -463,11 +463,15 @@ def main(args):
             # so, this allows sampling number of pixels rather than points.
             xya = list( zip(xa,ya) )
             all_xya = list( set( xya ) )
-            selected_xy = set(random.sample(all_xya, num_points))
+            if(len(all_xya)<=num_points):
+                selected_xy = set(all_xya)
+            else:
+                selected_xy = set(random.sample(all_xya, num_points))
             choices = []
             for xy_idx, xy in enumerate(xya):
                 if(xy in selected_xy):
                     choices.append(xy_idx)
+            assert len(choices)>=num_points
             points3d = points3d[choices]
 
             # Earlier I was sampling by sampling_prob, but this does not ensure all peaks from a pixel are included

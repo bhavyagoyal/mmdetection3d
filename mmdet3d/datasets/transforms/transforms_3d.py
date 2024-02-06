@@ -1104,7 +1104,7 @@ class PointSample(BaseTransform):
             probs = points.tensor[:,4]
             choices = np.argsort(-1*probs)[:num_samples]
         elif(self.firstk_sampling):
-            choices = np.arange(num_samples)
+            choices = np.arange(min(num_samples, len(points)))
         elif(self.thresh_sampling is not None):
             probs = points.tensor[:,4]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
