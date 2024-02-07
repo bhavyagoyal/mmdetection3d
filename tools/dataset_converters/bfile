@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
+
 #SBATCH --partition=research
 ###SBATCH --gres=scratch:1G
+#SBATCH --gres=gpu:gtx1080:1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=60G
 #SBATCH --time=24:0:0
+
 ###SBATCH --nodelist=euler141
 ###SBATCH --exclude=euler09
+###SBATCH --exclude=euler[01-28],euler141,euler142,euler143
+
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
+
 #SBATCH --job-name=mmdsim
 #SBATCH --no-requeue
 
@@ -16,9 +22,7 @@ module load anaconda/mini/23.3.1
 bootstrap_conda
 conda activate openmmlab
 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=1_50 --start 5040 --end 5050
-
-# --threshold 0.006
+python -u getdepth_working.py --method=argmax-filtering-sbr --sbr=5_100 --start 5040 --end 5050 --threshold 1.0 --outfolder_prefix "1.0"
 
 # --num_peaks 2 --outfolder_prefix "2"
 
