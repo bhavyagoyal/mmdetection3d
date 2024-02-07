@@ -15,8 +15,8 @@
 #conda 23.3.1, cuda11.8
 #conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia
 #install mmcv without mim, using pip instead
-#pip install "mmcv>=2.0.0rc4" -f  https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
-#pip install mmdet
+#pip install "mmcv>=2.0.1" -f  https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
+#pip install mmdet==3.1.0
 #git clone https://github.com/open-mmlab/mmdetection3d.git -b dev-1.x
 ## "-b dev-1.x" means checkout to the `dev-1.x` branch.
 #cd mmdetection3d
