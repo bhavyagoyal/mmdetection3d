@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=50-104%1
+#SBATCH --array=1-104%1
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=25G
-#SBATCH --time=24:0:0
+#SBATCH --time=6:0:0
 
-###SBATCH --nodelist=euler128
+#SBATCH --nodelist=euler140
 #SBATCH --exclude=euler[01-28],euler141,euler142,euler143
 
 ###SBATCH -o slurm.%j.%N.out # STDOUT
@@ -30,10 +30,7 @@ END=$((($SLURM_ARRAY_TASK_ID)*100))
 #START=$((($SLURM_ARRAY_TASK_ID-1)*10+1200))
 #END=$((($SLURM_ARRAY_TASK_ID)*10+1200))
 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=5_50 --start $START --end $END 
-
-
-#--threshold 1.0 --outfolder_prefix "1.0"
+python -u getdepth.py --method=argmax-filtering-sbr --sbr=1_50 --start $START --end $END --threshold 0.3 --outfolder_prefix "0.3"
 
 #--num_peaks 2 --outfolder_prefix "2" 
 
