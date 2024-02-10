@@ -89,6 +89,7 @@ def trigger_visualization_hook(cfg, args):
         visualization_hook['score_thr'] = args.score_thr
         #visualization_hook['draw_gt'] = True
         #visualization_hook['draw_pred'] = False
+        visualization_hook['show_pcd_rgb'] = True
     else:
         raise RuntimeError(
             'VisualizationHook must be included in default_hooks.'
