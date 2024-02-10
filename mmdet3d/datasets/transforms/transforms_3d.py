@@ -1104,7 +1104,7 @@ class PointSample(BaseTransform):
             probs = points.tensor[:,4]
             choices = np.argsort(-1*probs)[:num_samples]
         elif(self.firstk_sampling):
-            choices = np.arange(num_samples)
+            choices = np.arange(min(num_samples, len(points)))
         elif(self.thresh_sampling is not None):
             probs = points.tensor[:,4]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
@@ -2640,26 +2640,29 @@ class LaserMix(BaseTransform):
         points = input_dict['points']
         pts_semantic_mask = input_dict['pts_semantic_mask']
 
+        # convert angle to radian
+        pitch_angle_down = self.pitch_angles[0] / 180 * np.pi
+        pitch_angle_up = self.pitch_angles[1] / 180 * np.pi
+
         rho = torch.sqrt(points.coord[:, 0]**2 + points.coord[:, 1]**2)
         pitch = torch.atan2(points.coord[:, 2], rho)
-        pitch = torch.clamp(pitch, self.pitch_angles[0] + 1e-5,
-                            self.pitch_angles[1] - 1e-5)
+        pitch = torch.clamp(pitch, pitch_angle_down + 1e-5,
+                            pitch_angle_up - 1e-5)
 
         mix_rho = torch.sqrt(mix_points.coord[:, 0]**2 +
                              mix_points.coord[:, 1]**2)
         mix_pitch = torch.atan2(mix_points.coord[:, 2], mix_rho)
-        mix_pitch = torch.clamp(mix_pitch, self.pitch_angles[0] + 1e-5,
-                                self.pitch_angles[1] - 1e-5)
+        mix_pitch = torch.clamp(mix_pitch, pitch_angle_down + 1e-5,
+                                pitch_angle_up - 1e-5)
 
         num_areas = np.random.choice(self.num_areas, size=1)[0]
-        angle_list = np.linspace(self.pitch_angles[1], self.pitch_angles[0],
+        angle_list = np.linspace(pitch_angle_up, pitch_angle_down,
                                  num_areas + 1)
         out_points = []
         out_pts_semantic_mask = []
         for i in range(num_areas):
-            # convert angle to radian
-            start_angle = angle_list[i + 1] / 180 * np.pi
-            end_angle = angle_list[i] / 180 * np.pi
+            start_angle = angle_list[i + 1]
+            end_angle = angle_list[i]
             if i % 2 == 0:  # pick from original point cloud
                 idx = (pitch > start_angle) & (pitch <= end_angle)
                 out_points.append(points[idx])

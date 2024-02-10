@@ -18,7 +18,7 @@ sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_min2_allpeaks/'
+OUTFOLDER = BASE + '../points_min2/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
@@ -65,7 +65,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-sbr', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -293,6 +293,19 @@ def argmaxfiltering(spad):
     return spaddensity.argmax(-1), spaddensity.max(-1)
 
 
+def argmaxfilteringsbr(spad):
+    spad[:,:,:20] = 0
+    spad = scipy.signal.convolve(spad, pulse, mode='same')
+    spadargmax, spadmax = spad.argmax(-1), spad.max(-1)
+    spadthresh = spadmax>0.3
+    spadargmax, spadmax = spadargmax*spadthresh, spadmax*spadthresh
+    spadsum = np.clip(spad.sum(-1), 1, None)
+    #ta = sorted(spadsum.flatten())
+    #tb = sorted(spadmax.flatten())
+    #th = list(zip(ta,tb))
+    #print(th[0], th[1000], th[10000], th[100000], th[-1])
+    return spadargmax, spadmax, spadsum
+
 # density is just height of each bin, can normalize it in inference code
 def argmaxdecompressed(spad):
     spad = decompress(spad)
@@ -380,7 +393,18 @@ def main(args):
         #spadcopy = spad.copy()
         #spad = spad.argmax(-1)
         #spad = argmaxrandomtie(spad)
-        if(args.method=='argmax-filtering-conf'):
+        if(args.method=='argmax-filtering-sbr'):
+            spad, density, densitysum = argmaxfilteringsbr(spad)
+            if(args.threshold is not None):
+                thresh_mask = density>=args.threshold
+                spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
+            density = density.reshape(-1)
+            densitysum = densitysum.reshape(-1)
+            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
+            dist = tof2depth(spad*data['bin_size'])
+            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+        elif(args.method=='argmax-filtering-conf'):
             spad, density = argmaxfiltering(spad)
             if(args.threshold is not None):
                 thresh_mask = density>=args.threshold
@@ -449,10 +473,12 @@ def main(args):
         valid = np.all(points3d, axis=0) # only select points that have non zero locations    
         if(density is not None):
             density = density[valid]
+            densitysum = densitysum[valid]
         correct = correct[valid]
         points3d, rgb = points3d.T, rgb.T
         points3d, rgb = points3d[valid,:], rgb[valid,:]
-
+        
+        print(points3d.shape[0], gtvalid.sum())
         num_points = SAMPLED_POINTS
         if(sampling_prob is not None):
             sampling_prob = sampling_prob[valid]
@@ -463,11 +489,15 @@ def main(args):
             # so, this allows sampling number of pixels rather than points.
             xya = list( zip(xa,ya) )
             all_xya = list( set( xya ) )
-            selected_xy = set(random.sample(all_xya, num_points))
+            if(len(all_xya)<=num_points):
+                selected_xy = set(all_xya)
+            else:
+                selected_xy = set(random.sample(all_xya, num_points))
             choices = []
             for xy_idx, xy in enumerate(xya):
                 if(xy in selected_xy):
                     choices.append(xy_idx)
+            assert len(choices)>=num_points
             points3d = points3d[choices]
 
             # Earlier I was sampling by sampling_prob, but this does not ensure all peaks from a pixel are included
@@ -482,13 +512,14 @@ def main(args):
 
         if(density is not None):
             density = density[choices]
+            densitysum = densitysum[choices]
         rgb = rgb[choices]
         correct = correct[choices]
 
         if(sampling_prob is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
         elif(density is not None):
-            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], rgb], axis=1)
+            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis], rgb], axis=1)
         else:
             points3d_rgb = np.concatenate([points3d, rgb], axis=1)
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
