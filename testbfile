@@ -2,10 +2,10 @@
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
-#SBATCH --mem=20000
-#SBATCH --time=96:0:0
+#SBATCH --mem=24000
+#SBATCH --time=24:0:0
 ###SBATCH --nodelist=euler19
-#SBATCH --exclude=euler01,euler02,euler04,euler05,euler20,euler21,euler24,euler25,euler26,euler27
+#SBATCH --exclude=euler24,euler25,euler26,euler27
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=testmmdt3d
@@ -22,40 +22,34 @@ EXPERIMENT=work_dir_py/cf-wsp/1_100/updated/fps5000_sp01_post_set-1000
 EXPERIMENT=work_dir_py/cf-wsp/all4/updated/sp01_post_updatedfps05_e12
 EXPERIMENT=work_dir_py/baselines/argmax_filtering/all4/points2048_e12
 #EXPERIMENT=./work_dir_py/5_50_argmax/votenet_8xb16_sunrgbd-3d/
-#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+
+
 DATAPATH=wsp_cf/peaks-confidence_5_50
 DATAPATH=points_baseline/argmax-filtering-conf/5_50/
-DATAPATH=points/
+DATAPATH=points_min2/0.3/argmax-filtering-sbr/1_50/
 
-#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} --cfg-options \
-#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-#	test_dataloader.dataset.pipeline.0.load_dim=7 \
-#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
-#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
-#	model.backbone.in_channels=4 \
+SBR=("clean" "5_50" "5_100" "1_50" "1_100")
+for i in "${!SBR[@]}"
+do
+DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR[$i]}/
+
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} --cfg-options \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.pipeline.0.load_dim=8 \
+	test_dataloader.dataset.pipeline.1.transforms.2.num_points=2048 \
+	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2]" \
+
+done
 
 
+	#test_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.0 \
+	#model.backbone.in_channels=4 \
 	#model.filter_index=4 \
 	#model.post_sort=4 \
 	#model.neighbor_score=0.1 \
 	#model.updated_fps=0.5 \
 	#model.backbone.fps_sample_range_list="[5000,-1,-1,-1]" \
-
-
-
-# test.py reads pcd again for visualization, so testing augmentations are not applied
-CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth --work-dir work_dirs_gts --show-dir outimages  --task lidar_det --show 
-
-
-#	--cfg-options \
-
-
-#CUDA_VISIBLE_DEVICES=0 python -u demo/pcd_demo.py demo/data/sunrgbd/000017.bin configs/votenet/votenet_8xb16_sunrgbd-3d.py checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth  --show --out-dir outimages_gt --cfg-options test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4,5]"  \
-
-
-	#test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
-
-
-
-
 

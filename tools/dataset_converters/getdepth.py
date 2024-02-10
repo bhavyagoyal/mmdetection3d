@@ -293,18 +293,23 @@ def argmaxfiltering(spad):
     return spaddensity.argmax(-1), spaddensity.max(-1)
 
 
-def argmaxfilteringsbr(spad):
+def argmaxfilteringsbr(spad, decompressed=False, gaussian_filter_pulse=False):
     spad[:,:,:20] = 0
-    spad = scipy.signal.convolve(spad, pulse, mode='same')
+    if(decompressed):
+        # compress and decompress using truncated fourier
+        spad_copy = copy.deepcopy(spad)
+        spad = decompress(spad)
+    elif(gaussian_filter_pulse):
+        gf_pulse = np.zeros((5,5,22))
+        gf_pulse[2,2,:] = pulse[0][0]
+        gf_pulse = skimage.filters.gaussian(gf_pulse,sigma=1.0)
+        gf_pulse = gf_pulse/gf_pulse.sum()
+        spad = scipy.signal.convolve(spad, gf_pulse, mode='same')
+    else:
+        spad = scipy.signal.convolve(spad, pulse, mode='same')
+
     spadargmax, spadmax = spad.argmax(-1), spad.max(-1)
-    spadthresh = spadmax>0.3
-    spadargmax, spadmax = spadargmax*spadthresh, spadmax*spadthresh
-    spadsum = np.clip(spad.sum(-1), 1, None)
-    #ta = sorted(spadsum.flatten())
-    #tb = sorted(spadmax.flatten())
-    #th = list(zip(ta,tb))
-    #print(th[0], th[1000], th[10000], th[100000], th[-1])
-    return spadargmax, spadmax, spadsum
+    return spadargmax, spadmax, spad.sum(-1)
 
 # density is just height of each bin, can normalize it in inference code
 def argmaxdecompressed(spad):
@@ -346,13 +351,17 @@ def main(args):
         csph1D_obj.to(device='cpu')
 
     all_correct_cf, all_incorrect_cf = [], []
+    all_correct_sp, all_incorrect_sp = [], []
     all_correct_neighcount, all_incorrect_neighcount = [], []
     all_correct_neighcf, all_incorrect_neighcf = [], []
     all_correct_neighsp, all_incorrect_neighsp = [], []
     all_correct_neighcfweighted, all_incorrect_neighcfweighted = [], []
     all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
     cfmax = 0
-    for scene in scenes[start:end]:
+
+    #scenes_selected = random.sample(scenes, 10) # for vis 
+    scenes_selected = scenes[start:end]
+    for scene in scenes_selected:
         print(scene)
         OUTFILE = outfolder + scene.zfill(6) +'.bin'
         if(os.path.exists(OUTFILE)):
@@ -395,11 +404,13 @@ def main(args):
         #spad = argmaxrandomtie(spad)
         if(args.method=='argmax-filtering-sbr'):
             spad, density, densitysum = argmaxfilteringsbr(spad)
+            #thresh_mask = densitysum>=5.0
+            #spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
             if(args.threshold is not None):
                 thresh_mask = density>=args.threshold
                 spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
-            density = density.reshape(-1)
-            densitysum = densitysum.reshape(-1)
+            density, densitysum = density.reshape(-1), densitysum.reshape(-1)
+
             correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
             dist = tof2depth(spad*data['bin_size'])
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
@@ -529,10 +540,12 @@ def main(args):
         ##points_sp = torch.ones(points3d_rgb.shape[0]).cuda()[None, :]
 
         #cfmax = max(cfmax, points_probs.max())
-        ##points_probs = points_probs/points_probs.max()
+        ##points_sp = points_sp/points_sp.max()
     
         #all_correct_cf.extend(points_probs[0, correct].tolist())
         #all_incorrect_cf.extend(points_probs[0, ~correct].tolist())
+        #all_correct_sp.extend(points_sp[0, correct].tolist())
+        #all_incorrect_sp.extend(points_sp[0, ~correct].tolist())
 
         #MAX_BALL_NEIGHBORS = 64
         ## Ball query returns same index is neighbors are less than queried number of neighbors
@@ -580,7 +593,7 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     ##UPPER = int((cfmax+0.5))
     ##bins = [x for x in range(UPPER)]
-    #IMAGE_DIR = 'figs_argmaxallprob1'
+    #IMAGE_DIR = 'figs_sbr_nonorm'
 
     #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
@@ -604,13 +617,19 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
-    #bins = [x*0.01 for x in range(101)]
+    #bins = [x*0.001 for x in range(101)]
+    #plt.hist(all_correct_sp, bins, color='g', alpha=0.5)
+    #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5)
+    #plt.savefig(IMAGE_DIR + '/pointsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+
+    #plt.close()
+    #bins = [x*0.001 for x in range(101)]
     #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
-    #bins = [x*0.01 for x in range(101)]
+    #bins = [x*0.001 for x in range(101)]
     #plt.hist(all_correct_neighspweighted, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighspweighted, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/neighspweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
