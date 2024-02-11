@@ -631,8 +631,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         """
 
         # Only visualize when there is at least one instance
-        if not len(instances) > 0:
-            return None
+        #if not len(instances) > 0:
+        #    return None
 
         bboxes_3d = instances.bboxes_3d  # BaseInstance3DBoxes
         labels_3d = instances.labels_3d
@@ -860,9 +860,14 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                                      continue_key)
 
         if hasattr(self, 'o3d_vis'):
-            self.view_control.set_front([0,-1,0])
-            #self.view_control.set_lookat([0,4,0])
-            self.view_control.set_up([0,0,1])
+            #self.view_control.set_front([0,-1,0])
+            ##self.view_control.set_lookat([0,4,0])
+            #self.view_control.set_up([0,0,1])
+            #self.view_control.set_zoom(0.5)
+            #with open(save_path[:-4]+'-camera.json', 'w') as f:
+            #    f.write(self.o3d_vis.get_view_status())
+            with open('cam_view/' + save_path.split('/')[-1][:-4]+'-camera.json', 'rb') as f:
+                self.o3d_vis.set_view_status(f.read().strip())
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
                     self.view_port)

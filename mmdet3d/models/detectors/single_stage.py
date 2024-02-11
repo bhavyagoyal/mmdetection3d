@@ -45,6 +45,7 @@ class SingleStage3DDetector(Base3DDetector):
                  neighbor_score: float = None,
                  updated_fps: float = None,
                  new_fps_strat: bool = False,
+                 processed_points: bool = False,
                  shuffle_stack: bool = False,
                  weighted_filtering_score: bool = False,
                  post_sort: int = None,
@@ -64,6 +65,7 @@ class SingleStage3DDetector(Base3DDetector):
         self.neighbor_score = neighbor_score
         self.updated_fps = updated_fps
         self.new_fps_strat = new_fps_strat
+        self.processed_points = processed_points # set true for visualization. Hacky way to access points after filtering during visualization
         self.shuffle_stack = shuffle_stack
         self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort

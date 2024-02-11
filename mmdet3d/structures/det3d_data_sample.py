@@ -134,6 +134,21 @@ class Det3DDataSample(DetDataSample):
         ) at 0x7f7e29ff0d60>
     """  # noqa: E501
 
+    # add processed points after filtering to data samples
+    # hacky way to visualize, don't use it for anything else
+    @property
+    def processed_points(self):
+        return self._processed_points
+
+    @processed_points.setter
+    def processed_points(self, value) -> None:
+        self.set_field(value, '_processed_points')
+
+    @processed_points.deleter
+    def processed_points(self) -> None:
+        del self._processed_points
+
+
     @property
     def gt_instances_3d(self) -> InstanceData:
         return self._gt_instances_3d

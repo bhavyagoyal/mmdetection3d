@@ -95,6 +95,7 @@ class Base3DDetector(BaseDetector):
         data_samples: SampleList,
         data_instances_3d: OptInstanceList = None,
         data_instances_2d: OptInstanceList = None,
+        processed_points = None,
     ) -> SampleList:
         """Convert results list to `Det3DDataSample`.
 
@@ -149,4 +150,6 @@ class Base3DDetector(BaseDetector):
         for i, data_sample in enumerate(data_samples):
             data_sample.pred_instances_3d = data_instances_3d[i]
             data_sample.pred_instances = data_instances_2d[i]
+            if(processed_points):
+                data_sample.processed_points = processed_points
         return data_samples
