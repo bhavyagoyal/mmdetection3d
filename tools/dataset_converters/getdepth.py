@@ -65,7 +65,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-sbr', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
+        choices=['denoise', 'argmax-filtering', 'argmax-filtering-sbr', 'gaussfilter-argmax-filtering-sbr', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
         default='peaks-confidence',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
@@ -415,6 +415,17 @@ def main(args):
             dist = tof2depth(spad*data['bin_size'])
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+        elif(args.method=='gaussfilter-argmax-filtering-sbr'):
+            spad, density, densitysum = argmaxfilteringsbr(spad, gaussian_filter_pulse=True)
+            if(args.threshold is not None):
+                thresh_mask = density>=args.threshold
+                spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
+            density, densitysum = density.reshape(-1), densitysum.reshape(-1)
+
+            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
+            dist = tof2depth(spad*data['bin_size'])
+            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
         elif(args.method=='argmax-filtering-conf'):
             spad, density = argmaxfiltering(spad)
             if(args.threshold is not None):
@@ -593,7 +604,7 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     ##UPPER = int((cfmax+0.5))
     ##bins = [x for x in range(UPPER)]
-    #IMAGE_DIR = 'figs_sbr_nonorm'
+    #IMAGE_DIR = 'figs_sbr_gauss'
 
     #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
