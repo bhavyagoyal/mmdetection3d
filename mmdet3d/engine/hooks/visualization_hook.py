@@ -220,8 +220,8 @@ class Det3DVisualizationHook(Hook):
                 #points = np.frombuffer(pts_bytes, dtype=np.float32)
                 #points = points.reshape(-1, 8)#num_pts_feats)
                 #data_input['points'] = points
-                data_input['points'] = data_sample.processed_points[0][:10000,[0,1,2,-4,-3,-2]]
-                #data_input['points'] = data_batch['inputs']['points'][0]
+                data_input['points'] = data_sample.processed_points[0][:10000,[0,1,2,-3,-2,-1]]
+                #data_input['points'] = data_batch['inputs']['points'][0][:10000,:]
                 if self.test_out_dir is not None:
                     o3d_save_path = osp.basename(lidar_path).split(
                         '.')[0] + '.png'

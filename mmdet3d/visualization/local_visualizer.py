@@ -860,13 +860,13 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                                      continue_key)
 
         if hasattr(self, 'o3d_vis'):
-            #self.view_control.set_front([0,-1,0])
+            #self.view_control.set_front([0,0,-1])
             ##self.view_control.set_lookat([0,4,0])
-            #self.view_control.set_up([0,0,1])
+            #self.view_control.set_up([0,1,0])
             #self.view_control.set_zoom(0.5)
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
-            with open('cam_view/' + save_path.split('/')[-1][:-4]+'-camera.json', 'rb') as f:
+            with open('cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json', 'rb') as f:
                 self.o3d_vis.set_view_status(f.read().strip())
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
@@ -1013,7 +1013,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if 'gt_instances_3d' in data_sample:
                 gt_data_3d = self._draw_instances_3d(
                     data_input, data_sample.gt_instances_3d,
-                    data_sample.metainfo, vis_task, show_pcd_rgb, 'green')
+                    data_sample.metainfo, vis_task, show_pcd_rgb, palette)
             if 'gt_instances' in data_sample:
                 if len(data_sample.gt_instances) > 0:
                     assert 'img' in data_input
