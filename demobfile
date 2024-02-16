@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+module load anaconda/mini/23.3.1
+module load nvidia/cuda/11.8.0
+bootstrap_conda
+conda activate openmmlab
+
+CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
+EXPERIMENT=work_dir_py/sbr/0.048/all5/first50000_spupdated0001_post_newfps0002/
+CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+
+
+

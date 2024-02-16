@@ -2,7 +2,7 @@
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=36G
-#SBATCH --time=1:0:0
+#SBATCH --time=0:1:0
 #SBATCH -o plotlogs/slurm.%j.%N.out # STDOUT
 #SBATCH -e plotlogs/slurm.%j.%N.err # STDERR
 #SBATCH --job-name=plotmmdt
@@ -93,11 +93,12 @@ cd work_dir_py/sbr/
 #
 #
 #
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/first*  --eval --keys mAP_0.25 --out 1_50.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/1_50/* --eval --keys mAP_0.25 --out 0.3_1_50.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/first*  --eval --keys mAP_0.25 --out 1_50.pdf
 python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/*_*/*  --eval --keys mAP_0.25 --out 0.3_individual.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/all5/*  --eval --keys mAP_0.25 --out 1.0.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/*_*/*  --eval --keys mAP_0.25 --out 1.0_individual.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/*_*/*  --eval --keys mAP_0.25 --out 0.3_individual.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/all5/*  --eval --keys mAP_0.25 --out 1.0.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/*_*/*  --eval --keys mAP_0.25 --out 1.0_individual.pdf
 
+python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/*_*/first50000_spupdated0001*  --eval --keys mAP_0.25 --out 0.048_individual.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/all5/*  --eval --keys mAP_0.25 --out 0.048.pdf
 
