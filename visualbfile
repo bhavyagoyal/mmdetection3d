@@ -13,11 +13,11 @@ CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sun
 	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 \
 	--cfg-options \
 	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
+	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
 	test_dataloader.dataset.pipeline.0.load_dim=8 \
 	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4,5,6,7]" \
-	test_dataloader.dataset.pipeline.2.transforms.2.num_points=50000 \
-	test_dataloader.dataset.pipeline.2.transforms.2.firstk_sampling=True \
+	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 	model.processed_points=True \
 
 
@@ -39,4 +39,4 @@ CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sun
 
 
 
-# Change loading.py, dataset config, tools/test.py drawgt flag
+# Change loading.py, dataset config, tools/test.py drawgt flag, in bfile change pipleine.1 to pipeline.2

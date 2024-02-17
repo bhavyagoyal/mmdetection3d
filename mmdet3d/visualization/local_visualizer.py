@@ -866,8 +866,12 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             #self.view_control.set_zoom(0.5)
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
-            with open('cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json', 'rb') as f:
-                self.o3d_vis.set_view_status(f.read().strip())
+            camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
+            if(os.path.exists(camfile)): 
+                with open(camfile, 'rb') as f:
+                    self.o3d_vis.set_view_status(f.read().strip())
+            else:
+                print('Not using any camera view trajectory')
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
                     self.view_port)
