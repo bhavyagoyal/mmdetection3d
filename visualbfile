@@ -1,33 +1,74 @@
 #!/usr/bin/env bash
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
-EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+CHECKPOINT=checkpoints/0.3_thresh.pth
+DATAPATH=points_clean8/
+DATAPATH=points_visual/
+
 EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
 CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+DATAPATH=points_min2_cache/0.3/argmax-filtering-sbr/1_50/
 
-DATAPATH=points_min2/0.3/argmax-filtering-sbr/1_50/
-DATAPATH=points_clean8/
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 --color-idxs -4 -3 -2 \
+#	--work-dir work_dir_vis/1_50 \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#	model.filter_index=4 \
+#	model.post_sort=4 \
+#	model.neighbor_score=0.004 \
+#	model.updated_fps=0.01 \
+#	model.new_fps_strat=True \
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 \
+#	--work-dir work_dir_vis/1_50 \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.0 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=20000 \
+#	model.processed_points=True \
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 --load-pts-again \
+#	--work-dir work_dir_vis/1_50 \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=2048 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	model.processed_points=True \
 
-# test.py reads pcd again for visualization, so testing augmentations are not applied
+
+CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
+DATAPATH=points_clean8_cache/
 CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 \
+	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 \
+	--work-dir work_dir_vis/1_50 \
 	--cfg-options \
 	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
 	test_dataloader.dataset.pipeline.0.load_dim=8 \
-	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4,5,6,7]" \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
 	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
 	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 	model.processed_points=True \
-
-
-
-	#model.filter_index=4 \
-	#model.post_sort=4 \
-	#model.neighbor_score=0.004 \
-	#model.updated_fps=0.01 \
-	#model.new_fps_strat=True \
-
 
 
 
@@ -35,7 +76,6 @@ CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sun
 
 
 	#test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
-	#test_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.0 \
 
 
 

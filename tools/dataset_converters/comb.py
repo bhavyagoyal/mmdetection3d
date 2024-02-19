@@ -5,7 +5,8 @@ from typing import Tuple
 
 dirs = sys.argv[1:]
 
-files = os.listdir(dirs[0])
+files = open('gt.txt', 'r').readlines()
+files = [x.strip() for x in files]
 print(files)
 
 for file in files:
@@ -20,13 +21,13 @@ for file in files:
             x1, x2 = max(0, x1-100), min(x2+100, img.shape[0])
             y1, y2 = max(0, y1-100), min(y2+100, img.shape[1])
         if(curr_dir.split('/')[-1]=='image'):
+            cv2.imwrite(os.path.join(curr_dir, 'inc-'+file[:-4]+'.jpg'), img)
             img = cv2.resize(img, (y2-y1, x2-x1))
         else:
             img = img[x1:x2,y1:y2,:]
-        cv2.imwrite(os.path.join(curr_dir, 'inc-'+file), img)
+            cv2.imwrite(os.path.join(curr_dir, 'inc-'+file[:-4]+'.jpg'), img)
         all_img.append(img)
     all_img = np.concatenate(all_img, axis=1)
     cv2.imwrite(os.path.join(dirs[-1], file), all_img)
-
 
 

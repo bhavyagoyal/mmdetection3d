@@ -63,6 +63,8 @@ class Det3DVisualizationHook(Hook):
                  test_out_dir: Optional[str] = None,
                  draw_gt: bool = False,
                  draw_pred: bool = True,
+                 color_idxs: list = [-3,-2,-1],
+                 load_pts_again: bool = False,
                  show_pcd_rgb: bool = False,
                  backend_args: Optional[dict] = None):
         self._visualizer: Visualizer = Visualizer.get_current_instance()
@@ -92,6 +94,8 @@ class Det3DVisualizationHook(Hook):
         self._test_index = 0
         self.draw_gt = draw_gt
         self.draw_pred = draw_pred
+        self.color_idxs = color_idxs
+        self.load_pts_again = load_pts_again
         self.show_pcd_rgb = show_pcd_rgb
 
     def after_val_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
@@ -215,12 +219,15 @@ class Det3DVisualizationHook(Hook):
                 assert 'lidar_path' in data_sample, \
                     'lidar_path is not in data_sample'
                 lidar_path = data_sample.lidar_path
-                #num_pts_feats = data_sample.num_pts_feats
-                #pts_bytes = get(lidar_path, backend_args=self.backend_args)
-                #points = np.frombuffer(pts_bytes, dtype=np.float32)
-                #points = points.reshape(-1, 8)#num_pts_feats)
-                #data_input['points'] = points
-                data_input['points'] = data_sample.processed_points[0][:10000,[0,1,2,-3,-2,-1]]
+                num_pts_feats = data_sample.num_pts_feats
+                if(self.load_pts_again):
+                    pts_bytes = get(lidar_path, backend_args=self.backend_args)
+                    points = np.frombuffer(pts_bytes, dtype=np.float32)
+                    points = points.reshape(-1, 8)#num_pts_feats)
+                    data_input['points'] = points
+                else:
+                    data_input['points'] = data_sample.processed_points[0]
+                data_input['points'] = data_input['points'][:10000,[0,1,2]+self.color_idxs]
                 #data_input['points'] = data_batch['inputs']['points'][0][:10000,:]
                 if self.test_out_dir is not None:
                     o3d_save_path = osp.basename(lidar_path).split(
