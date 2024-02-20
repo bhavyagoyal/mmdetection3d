@@ -6,6 +6,7 @@ import sys
 import time
 from typing import List, Optional, Sequence, Tuple, Union
 import seaborn as sns
+from .line_mesh import LineMesh
 
 import matplotlib.pyplot as plt
 import mmcv
@@ -329,8 +330,14 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             line_set = geometry.LineSet.create_from_oriented_bounding_box(
                 box3d)
             line_set.paint_uniform_color(np.array(bbox_color[i]) / 255.)
+            line_mesh = LineMesh(np.asarray(line_set.points), np.asarray(line_set.lines), colors=np.array(bbox_color[i]) / 255., radius=0.005)
+            line_mesh_geoms = line_mesh.cylinder_segments
+
+
             # draw bboxes on visualizer
-            self.o3d_vis.add_geometry(line_set)
+            #self.o3d_vis.add_geometry(line_set)
+            for geom in line_mesh_geoms:
+                self.o3d_vis.add_geometry(geom)
 
             # change the color of points which are in box
             if self.pcd is not None and mode == 'xyz':
