@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from typing import List, Optional, Sequence, Tuple, Union
+import seaborn as sns
 
 import matplotlib.pyplot as plt
 import mmcv
@@ -125,6 +126,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         frame_cfg: dict = dict(size=1, origin=[0, 0, 0]),
         alpha: Union[int, float] = 0.8,
         multi_imgs_col: int = 3,
+        norm_color: bool = False,
         fig_show_cfg: dict = dict(figsize=(18, 12))
     ) -> None:
         super().__init__(
@@ -140,6 +142,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         if points is not None:
             self.set_points(points, pcd_mode=pcd_mode, frame_cfg=frame_cfg)
         self.multi_imgs_col = multi_imgs_col
+        self.norm_color = norm_color
         self.fig_show_cfg.update(fig_show_cfg)
 
         self.flag_pause = False
@@ -249,8 +252,14 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             # normalize to [0, 1] for Open3D drawing
             if not ((points_colors >= 0.0) & (points_colors <= 1.0)).all():
                 points_colors /= 255.0
-            #if(points_colors.max()>0):
-            #    points_colors=points_colors/points_colors.max()
+            if(self.norm_color):
+                pt_cls = sorted(points_colors[:,0])
+                mn, mx = pt_cls[100], pt_cls[-100]
+                #mn = points_colors[:,0].min()
+                print(mn, mx)
+                points_colors = np.clip(points_colors[:,0], mn, mx)
+                points_colors = (points_colors-mn)/mx
+                points_colors = sns.color_palette('coolwarm', as_cmap=True)(points_colors)[:,:3]
         else:
             raise NotImplementedError
 

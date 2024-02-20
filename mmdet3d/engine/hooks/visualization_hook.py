@@ -64,6 +64,7 @@ class Det3DVisualizationHook(Hook):
                  draw_gt: bool = False,
                  draw_pred: bool = True,
                  color_idxs: list = [-3,-2,-1],
+                 norm_color: bool = False,
                  load_pts_again: bool = False,
                  show_pcd_rgb: bool = False,
                  backend_args: Optional[dict] = None):
@@ -71,6 +72,7 @@ class Det3DVisualizationHook(Hook):
         self.interval = interval
         self.score_thr = score_thr
         self.show = show
+        self.norm_color = self._visualizer.norm_color = norm_color
         if self.show:
             # No need to think about vis backends.
             self._visualizer._vis_backends = {}

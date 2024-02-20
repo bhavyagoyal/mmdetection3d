@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument(
         '--color-idxs', nargs="+", type=int, default=None, help='idxs to use for visualization for color')
     parser.add_argument(
+        '--norm-color', action='store_true', help='normalize color to show heatmap')
+    parser.add_argument(
         '--load-pts-again', action='store_true', help='load point cloud again to show all points')
     parser.add_argument(
         '--task',
@@ -95,6 +97,7 @@ def trigger_visualization_hook(cfg, args):
         #visualization_hook['draw_pred'] = False
         visualization_hook['show_pcd_rgb'] = True
         visualization_hook['load_pts_again'] = args.load_pts_again
+        visualization_hook['norm_color'] = args.norm_color
         if( args.color_idxs is not None):
             visualization_hook['color_idxs'] = args.color_idxs
     else:
