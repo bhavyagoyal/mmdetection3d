@@ -256,8 +256,6 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if(self.norm_color):
                 pt_cls = sorted(points_colors[:,0])
                 mn, mx = pt_cls[100], pt_cls[-100]
-                #mn = points_colors[:,0].min()
-                print(mn, mx)
                 points_colors = np.clip(points_colors[:,0], mn, mx)
                 points_colors = (points_colors-mn)/mx
                 points_colors = sns.color_palette('coolwarm', as_cmap=True)(points_colors)[:,:3]
@@ -330,7 +328,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             line_set = geometry.LineSet.create_from_oriented_bounding_box(
                 box3d)
             line_set.paint_uniform_color(np.array(bbox_color[i]) / 255.)
-            line_mesh = LineMesh(np.asarray(line_set.points), np.asarray(line_set.lines), colors=np.array(bbox_color[i]) / 255., radius=0.005)
+            line_mesh = LineMesh(np.asarray(line_set.points), np.asarray(line_set.lines), colors=np.array(bbox_color[i]) / 255., radius=0.02)
             line_mesh_geoms = line_mesh.cylinder_segments
 
 
@@ -884,12 +882,13 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             #self.view_control.set_zoom(0.5)
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
-            camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
-            if(os.path.exists(camfile)): 
-                with open(camfile, 'rb') as f:
-                    self.o3d_vis.set_view_status(f.read().strip())
-            else:
-                print('Not using any camera view trajectory')
+            if(save_path):
+                camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
+                if(os.path.exists(camfile)): 
+                    with open(camfile, 'rb') as f:
+                        self.o3d_vis.set_view_status(f.read().strip())
+                else:
+                    print('Not using any camera view trajectory')
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
                     self.view_port)
