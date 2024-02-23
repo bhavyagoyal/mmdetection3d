@@ -193,7 +193,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                    vis_mode: str = 'replace',
                    frame_cfg: dict = dict(size=1, origin=[0, 0, 0]),
                    points_color: Tuple[float] = (0.8, 0.8, 0.8),
-                   points_size: int = 1,
+                   points_size: int = 2,
                    mode: str = 'xyz') -> None:
         """Set the point cloud to draw.
 
