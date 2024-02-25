@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:gtx1080:4
+#SBATCH --gres=gpu:gtx1080:2
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler05,euler24,euler25,euler26,euler27
+###SBATCH --exclude=euler05,euler24,euler25,euler26,euler27
 ###SBATCH --exclude=euler01,euler05
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -40,7 +40,9 @@ CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.
 #EXPERIMENT=work_dir_py/baselines/argmax_filtering_allprob1/1_50/sp03_testing
 EXPERIMENT=work_dir_py/npeaks/rerun/1peak/1_50/first50000_spupdated03_post_updatedfps05_nspobjweightedeval
 EXPERIMENT=work_dir_py/npeaks/min2/1peak/1_50/first50000_cfupdated04_post_newfpscf05
-EXPERIMENT=work_dir_py/sbr/0.048/all5/first50000_spupdated0001_post_newfpscf05
+EXPERIMENT=work_dir_py/sbr/0.048/all5/first50000_spupdated0001_post_newfpscf005
+EXPERIMENT=work_dir_py/gaussian_noise/0.1/first2048
+EXPERIMENT=work_dir_py/score-denoised_sunrgbd/1.0/argmax-filtering-sbr/1_50_large/first10000
 #EXPERIMENT=work_dir_py/sbr/0.3/all5/first10000
 #50000_spupdated0002_post_newfps0003
 #updatedfps05_newfps_wofpsshuffle
@@ -55,13 +57,16 @@ CHECKPOINT=${EXPERIMENT}/epoch_36.pth
 #DATAPATH=points_baseline/argmax-filtering-conf/1_50/
 DATAPATH=points_cfwsp/1/peaks-confidence/1_50/
 DATAPATH=points_min2/0.048/gaussfilter-argmax-filtering-sbr/
+DATAPATH=points_gaussian/0.1/
+DATAPATH=points_min2/1.0/score-denoised_sunrgbd/argmax-filtering-sbr/1_50_large/pcl/
+
 #DATAPATH=points_min2/0.3/argmax-filtering-sbr/
 #DATAPATH=points_min2/argmax-filtering-conf/
 #DATAPATH=points_compression/32/decompressed-argmax/5_50/
 #DATAPATH=points_compression/32/decompressed-peaks-confidence/1_50/
 #argmax-filtering-conf/
 #DATAPATH=points_baseline/3dcnndenoise-argmax/denoise/5_50/
-GPUS=4
+GPUS=2
 PORTUSED=$(( $RANDOM + 10000 ))
 
 
@@ -83,24 +88,28 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_dataloader.batch_size=8 \
 	work_dir=${EXPERIMENT} \
 	default_hooks.checkpoint.interval=1 \
-	train_dataloader.dataset.dataset.pipeline.4.num_points=50000 \
-	val_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+	train_dataloader.dataset.dataset.pipeline.4.num_points=10000 \
+	val_dataloader.dataset.pipeline.1.transforms.2.num_points=10000 \
 	train_dataloader.dataset.dataset.pipeline.4.firstk_sampling=True \
 	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 	train_dataloader.dataset.dataset.pipeline.0.load_dim=8 \
 	val_dataloader.dataset.pipeline.0.load_dim=8 \
-	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2,3,4]" \
-	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4]" \
-	model.neighbor_score=0.001 \
-	model.filter_index=5 \
-	model.post_sort=4 \
-	model.updated_fps=0.5 \
-	model.new_fps_strat=True \
-	train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50_clean.pkl' \
-	val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
-	param_scheduler.0.end=12 \
-	param_scheduler.0.milestones=[8,10] \
-	train_cfg.max_epochs=12 \
+	train_dataloader.dataset.dataset.pipeline.0.use_dim="[0,1,2]" \
+	val_dataloader.dataset.pipeline.0.use_dim="[0,1,2]" \
+
+
+
+
+	#model.neighbor_score=0.001 \
+	#model.filter_index=5 \
+	#model.post_sort=4 \
+	#model.updated_fps=0.05 \
+	#model.new_fps_strat=True \
+	#train_dataloader.dataset.dataset.ann_file='sunrgbd_infos_train_1_100_1_50_5_100_5_50_clean.pkl' \
+	#val_dataloader.dataset.ann_file='sunrgbd_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
+	#param_scheduler.0.end=12 \
+	#param_scheduler.0.milestones=[8,10] \
+	#train_cfg.max_epochs=12 \
 
 
 
