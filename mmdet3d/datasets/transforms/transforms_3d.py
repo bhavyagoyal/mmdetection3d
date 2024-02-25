@@ -1034,6 +1034,7 @@ class PointSample(BaseTransform):
                  topk_sampling: bool = False,
                  firstk_sampling: bool = False,
                  thresh_sampling: float = None,
+                 threshall_sampling: float = None,
                  pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
@@ -1044,6 +1045,7 @@ class PointSample(BaseTransform):
         self.topk_sampling = topk_sampling
         self.firstk_sampling = firstk_sampling
         self.thresh_sampling = thresh_sampling
+        self.threshall_sampling = threshall_sampling
         self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1109,6 +1111,10 @@ class PointSample(BaseTransform):
             probs = points.tensor[:,4]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
             choices = np.array(list(islice(cycle(probs_selected), num_samples)))
+        elif(self.threshall_sampling is not None):
+            probs = points.tensor[:,4]
+            probs_selected = np.where(probs>self.thresh_sampling)[0]
+            choices = probs_selected[:num_samples]
         else:
             choices = np.random.choice(point_range, num_samples, replace=replace)
 

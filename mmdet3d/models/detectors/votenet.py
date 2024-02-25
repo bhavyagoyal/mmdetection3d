@@ -63,11 +63,6 @@ class VoteNet(SingleStage3DDetector):
             dict[str, Tensor]: A dictionary of loss components.
         """
         feat_dict = self.extract_feat(batch_inputs_dict)
-        #print(feat_dict.keys(), feat_dict['sa_xyz'][0].shape, feat_dict['sa_xyz'][1].shape)
-        #for x in range(feat_dict['sa_xyz'][0].shape[0]):
-        #    feat_dict['sa_xyz'][1][x].cpu().numpy().astype(np.float32).tofile('pointscheck/peaks-confidence-1-50-fps5000-sp03-1-' + str(x) + '.bin')
-        #    feat_dict['sa_xyz'][0][x].cpu().numpy().astype(np.float32).tofile('pointscheck/peaks-confidence-1-50-fps5000-sp03-0-' + str(x) + '.bin')
-        #exit(0)
         points = batch_inputs_dict['points']
         losses = self.bbox_head.loss(points, feat_dict, batch_data_samples,
                                      **kwargs)
@@ -102,6 +97,14 @@ class VoteNet(SingleStage3DDetector):
         """
         feats_dict = self.extract_feat(batch_inputs_dict, True)
         points = batch_inputs_dict['points']
+        #print(feats_dict.keys(), feats_dict['sa_xyz'][0].shape, feats_dict['sa_xyz'][1].shape)
+        #for x in range(feats_dict['sa_xyz'][0].shape[0]):
+        #    pref = '1-50-sp0004-newfpscf10'
+        #    feats_dict['sa_xyz'][1][x].cpu().numpy().astype(np.float32).tofile('centroids/' + pref +'-1-' + str(x) + '.bin')
+        #    feats_dict['sa_indices'][1][x].cpu().numpy().tofile('centroids/' + pref +'-1-' + str(x) + '-indices.bin')
+        #    feats_dict['sa_xyz'][0][x].cpu().numpy().astype(np.float32).tofile('centroids/' + pref +'-0-' + str(x) + '.bin')
+        #    points[0].cpu().numpy().astype(np.float32).tofile('centroids/' + pref +'-0-' + str(x) + '-points.bin')
+        #exit(0)
         results_list = self.bbox_head.predict(points, feats_dict,
                                               batch_data_samples, **kwargs)
         processed_points = None
