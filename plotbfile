@@ -94,14 +94,16 @@ cd work_dir_py/sbr/
 #
 #
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/first*  --eval --keys mAP_0.25 --out 1_50.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
+python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/*_*/*  --eval --keys mAP_0.25 --out 0.3_individual.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/all5/*  --eval --keys mAP_0.25 --out 1.0.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/*_*/*  --eval --keys mAP_0.25 --out 1.0_individual.pdf
 
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/*_*/first50000_spupdated0001* 0.048/*_*/thresh*  --eval --keys mAP_0.25 --out 0.048_individual.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/all5/*  --eval --keys mAP_0.25 --out 0.048.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/*  --eval --keys mAP_0.25 --out gaussian_noise.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/*  --eval --keys mAP_0.25 --out gaussian_noise.pdf
+
+python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd*/*_*/*  --eval --keys mAP_0.25 --out score_denoise.pdf
 
 
 
