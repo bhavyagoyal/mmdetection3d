@@ -215,9 +215,8 @@ class SingleStage3DDetector(Base3DDetector):
             neighbor_probs[ignore_points]=0
             neighbor_probs_weighted[ignore_points]=0
 
-        stack_points_nonfps = None
-        if(self.post_sort is not None):
-            choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
+            #if(self.post_sort is not None):
+            choices = torch.argsort(stack_points[:,:,self.filter_index], descending=True)
             #if(self.post_sort>=0):
             #    choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
             #elif(self.post_sort==-1):
@@ -230,7 +229,7 @@ class SingleStage3DDetector(Base3DDetector):
             # Since mini batch will have different number of points now
             # only remove from maximum index of zero probability in the batch
             values = torch.zeros(stack_points.shape[0],1).cuda()
-            crop_index = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
+            crop_index = torch.searchsorted(stack_points[...,self.filter_index]*-1, values)[:,0]
             stack_points = stack_points[:,:crop_index.max(),:]
 
             # Set the rest of the points to the first point
@@ -244,7 +243,11 @@ class SingleStage3DDetector(Base3DDetector):
             ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
             stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2]))
 
+        stack_points_nonfps = None
         if(self.updated_fps):
+            choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
+            stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
+
             values = torch.ones(stack_points.shape[0],1).cuda()*-1*self.updated_fps
             new_fps = torch.searchsorted(stack_points[...,self.post_sort]*-1, values)[:,0]
             new_fps = new_fps.median()
