@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+DATAPATH=points_visual/
+
+######### Exp 2 ################
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.4  --work-dir work_dir_flim/day3 --cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	model.processed_points=True \
+#
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.15 	--work-dir work_dir_flim/day3/ 	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.threshall_sampling=2. \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#
+#
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det --show --wait-time -1 --score-thr 0.2 --color-idxs -5 -5 -5 	--work-dir work_dir_flim/day3/ 	--norm-color 	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#	model.filter_index=4 \
+#	model.neighbor_score=0.05 \
+#	model.post_sort=4 \
+#	model.updated_fps=1.0 \
+#	model.new_fps_strat=True \
+
+
+
+
+
+########### Exp 5 ################
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.3  --work-dir work_dir_flim/day3 --cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	model.processed_points=True \
+#
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.3 \
+#	--work-dir work_dir_flim/day3/ \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.threshall_sampling=3. \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#
+#
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det --show --wait-time -1 --score-thr 0.45 --color-idxs -5 -5 -5 \
+#	--work-dir work_dir_flim/day3/ \
+#	--norm-color \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#	model.filter_index=4 \
+#	model.neighbor_score=0.2 \
+#	model.post_sort=4 \
+#	model.updated_fps=3. \
+#	model.new_fps_strat=True \
+
+
+## Exp 15
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.3  --work-dir work_dir_flim/day3 --cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	model.processed_points=True \
+#
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det  --show --wait-time -1 --score-thr 0.3 \
+#	--work-dir work_dir_flim/day3/ \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.threshall_sampling=3. \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+
+EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
+CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+	--show-dir outimages  --task lidar_det --show --wait-time -1 --score-thr 0.3 --color-idxs -5 -5 -5 \
+	--work-dir work_dir_flim/day3/ \
+	--norm-color \
+	--cfg-options \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.ann_file='sunrgbd_infos_val_one.pkl' \
+	test_dataloader.dataset.pipeline.0.load_dim=8 \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4,5,6,7]" \
+	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+	model.processed_points=True \
+	model.filter_index=4 \
+	model.neighbor_score=0.2 \
+	model.post_sort=4 \
+	model.updated_fps=2. \
+	model.new_fps_strat=True \
+
+
+
