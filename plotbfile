@@ -101,7 +101,8 @@ python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval 
 
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/*_*/first50000_spupdated0001* 0.048/*_*/thresh*  --eval --keys mAP_0.25 --out 0.048_individual.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/all5/*  --eval --keys mAP_0.25 --out 0.048.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/*  --eval --keys mAP_0.25 --out gaussian_noise.pdf
+
+python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/*  --eval --keys mAP_0.25 --out gaussian_noise.pdf
 
 python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd*/*_*/*  --eval --keys mAP_0.25 --out score_denoise.pdf
 
