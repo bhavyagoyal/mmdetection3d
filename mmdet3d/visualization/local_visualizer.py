@@ -876,9 +876,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                                      continue_key)
 
         if hasattr(self, 'o3d_vis'):
-            #self.view_control.set_front([0,0,-1])
+            #self.view_control.set_front([0,-1,0])
             ##self.view_control.set_lookat([0,4,0])
-            #self.view_control.set_up([0,1,0])
+            #self.view_control.set_up([0,0,1])
             #self.view_control.set_zoom(0.5)
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
