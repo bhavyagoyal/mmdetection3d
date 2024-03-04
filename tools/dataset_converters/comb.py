@@ -18,8 +18,9 @@ for file in files:
             x, y = np.where(img[:,:,0]>0)
             x1, x2 = min(x), max(x)
             y1, y2 = min(y), max(y)
-            x1, x2 = max(0, x1-100), min(x2+100, img.shape[0])
-            y1, y2 = max(0, y1-100), min(y2+100, img.shape[1])
+            marginx, marginy = min(50,int((x2-x1)*0.1)), min(50,int((y2-y1)*0.1))
+            x1, x2 = max(0, x1-marginx), min(x2+marginx, img.shape[0])
+            y1, y2 = max(0, y1-marginy), min(y2+marginy, img.shape[1])
         if(curr_dir.split('/')[-1]=='image'):
             cv2.imwrite(os.path.join(curr_dir, 'inc-'+file[:-4]+'.jpg'), img)
             img = cv2.resize(img, (y2-y1, x2-x1))

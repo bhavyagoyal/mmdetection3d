@@ -4,15 +4,17 @@ from mmdet3d.visualization import Det3DLocalVisualizer
 import matplotlib
 import seaborn as sns
 
-psize = 4
-for idx, pref in enumerate(['clean', '5-50-sp0004', '5-50-sp0004-newfpscf10']):
+#psize = 4
+psize = 2
+#for idx, pref in enumerate(['clean', '5-50-sp0004', '5-50-sp0004-newfpscf10']):
+for idx, pref in enumerate(['clean', '5-50-sp0004', '5-50-sp0004']):
     points = np.fromfile('centroids/'+pref+'-0-0-points.bin', dtype=np.float32)
     indices = np.fromfile('centroids/'+pref+'-1-0-indices.bin', dtype=np.int64)
 
     visualizer = Det3DLocalVisualizer()
     if(idx>=2):
         points = points.reshape(-1,10)
-        #indices = np.random.choice(range(points.shape[0]), 10000, replace=False)
+        indices = np.random.choice(range(points.shape[0]), 25000, replace=False)
         points = points[indices]
         points_xyz = points[:,:3]
         points_color = points[:,4]
@@ -22,19 +24,19 @@ for idx, pref in enumerate(['clean', '5-50-sp0004', '5-50-sp0004-newfpscf10']):
         visualizer.set_points(points_xyz, pcd_mode=2, vis_mode='add', points_color = points_color, points_size=psize)
     elif(idx==1):
         points = points.reshape(-1,10)
-        #indices = np.random.choice(range(points.shape[0]), 10000, replace=False)
+        indices = np.random.choice(range(points.shape[0]), 25000, replace=False)
         points = points[indices]
         points_xyz = points[:,:3]
         visualizer.set_points(points_xyz, pcd_mode=2, vis_mode='add', points_size=psize)
     else:
         points = points.reshape(-1,8)
-        #indices = np.random.choice(range(points.shape[0]), 50000, replace=False)
+        indices = np.random.choice(range(points.shape[0]), 50000, replace=False)
         points = points[indices]
         points_xyz = points[:,:3]
         visualizer.set_points(points_xyz, pcd_mode=2, vis_mode='add', points_size=psize)
     with open('cam_selected/000001.json', 'rb') as f:
         visualizer.o3d_vis.set_view_status(f.read().strip())
-    visualizer.o3d_vis.capture_screen_image(f"{idx}-center.jpg", True)
+    visualizer.o3d_vis.capture_screen_image(f"{idx}-all.jpg", True)
     visualizer.show()
 
 
