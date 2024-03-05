@@ -337,11 +337,11 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             for geom in line_mesh_geoms:
                 self.o3d_vis.add_geometry(geom)
 
-            # change the color of points which are in box
-            if self.pcd is not None and mode == 'xyz':
-                indices = box3d.get_point_indices_within_bounding_box(
-                    self.pcd.points)
-                self.points_colors[indices] = np.array(bbox_color[i]) / 255.
+            ## change the color of points which are in box
+            #if self.pcd is not None and mode == 'xyz':
+            #    indices = box3d.get_point_indices_within_bounding_box(
+            #        self.pcd.points)
+            #    self.points_colors[indices] = np.array(bbox_color[i]) / 255.
 
         # update points colors
         if self.pcd is not None:
