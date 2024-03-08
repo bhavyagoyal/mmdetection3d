@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
+#SBATCH --exclude=euler[01-28]
 #SBATCH --mem=36G
 #SBATCH --time=1:0:0
 #SBATCH -o plotlogs/slurm.%j.%N.out # STDOUT
@@ -102,9 +103,9 @@ python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval 
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/*_*/first50000_spupdated0001* 0.048/*_*/thresh*  --eval --keys mAP_0.25 --out 0.048_individual.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/all5/*  --eval --keys mAP_0.25 --out 0.048.pdf
 
-python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/*  --eval --keys mAP_0.25 --out gaussian_noise.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/first20000 ../gaussian_noise/score-denoised/*/first50000   --eval --keys mAP_0.25 --out gaussian_noise.pdf
 
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd*/*_*/*  --eval --keys mAP_0.25 --out score_denoise.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd1000fastfast/*/* 0.3/*/thresh20000_10  --eval --keys mAP_0.25 --out score_denoise.pdf
 
 
 
