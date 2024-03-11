@@ -24,13 +24,13 @@ p1 = [58.61, 54.11, 50.03, 36.45, 25.33]
 p2 = [58.45, 49.23, 45.63, 26.44, 15.44]
 p5 = [58.34, 42.43, 38.77, 16.95, 11.34]
 
-plt.plot(x, p3, marker='D', linewidth=3.0, markersize=7.0, label='PPC')
-#plt.plot(x, p1, marker='D', linewidth=3.0, markersize=7.0, label='PPC w/o FPPS')
-#plt.plot(x, p2, marker='D', linewidth=3.0, markersize=7.0, label='PPC w/o NPD Filtering')
-#plt.plot(x, p5, marker='D', linewidth=3.0, markersize=7.0, label='PPC w/o FPPS & NPD Filtering')
-plt.plot(x, p4, marker='D', linewidth=3.0, markersize=7.0, label='PPC w/o Probability')
+plt.plot(x, p3, marker='D', linewidth=3.0, markersize=7.0, label='PPC (Ours)')
+#plt.plot(x, p1, marker='D', linewidth=3.0, markersize=7.0, label='w/o FPPS')
+#plt.plot(x, p2, marker='D', linewidth=3.0, markersize=7.0, label='w/o NPD Filtering')
+#plt.plot(x, p5, marker='D', linewidth=3.0, markersize=7.0, label='w/o FPPS & NPD Filtering')
+plt.plot(x, p4, marker='D', linewidth=3.0, markersize=7.0, label='w/o Probability')
 plt.xlabel('SBR')
-plt.ylabel('mAP 3D Object Detection')
+plt.ylabel('mAP (3D Object Detection)')
 plt.legend()
 plt.tight_layout()
 #plt.gca().yaxis.grid(color='black')

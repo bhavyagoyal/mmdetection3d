@@ -12,13 +12,22 @@ import torch
 from mmcv.ops.ball_query import ball_query
 import copy
 import skimage.filters
+from matplotlib.ticker import FuncFormatter
 
+
+plt.style.use('ggplot')
+matplotlib.use('Agg')
+matplotlib.rcParams['text.color'] = 'black'
+matplotlib.rcParams['axes.labelcolor'] = 'black'
+matplotlib.rcParams['xtick.color'] = 'black'
+matplotlib.rcParams['ytick.color'] = 'black'
+matplotlib.rcParams.update({'font.size': 16})
 
 sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
 
 BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_min2/'
+OUTFOLDER = BASE + '../points_testing/'
 #OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
 GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
@@ -328,6 +337,16 @@ def argmaxrandomtie(spad):
             spadmax[i,j] = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
     return spadmax
 
+
+def human_format(num, pos):
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    # add more suffixes if you need them
+    return '%d%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+
+
 def main(args):
     
     start, end = 0, len(scenes)
@@ -403,6 +422,8 @@ def main(args):
         #spad = spad.argmax(-1)
         #spad = argmaxrandomtie(spad)
         if(args.method=='argmax-filtering-sbr'):
+            #spadcopy = spad.copy()
+            #spadcopy = scipy.signal.convolve(spadcopy, pulse, mode='same')
             spad, density, densitysum = argmaxfilteringsbr(spad)
             #thresh_mask = densitysum>=5.0
             #spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
@@ -410,6 +431,35 @@ def main(args):
                 thresh_mask = density>=args.threshold
                 spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
             density, densitysum = density.reshape(-1), densitysum.reshape(-1)
+
+
+            #for ii in range(nr//2+10, nr//2+15):
+            #    for jj in range(1, nc+1):
+            #        plt.close()
+            #        plt.figure().set_figwidth(14)
+            #        #plt.bar(range(nt), spadcopy[ii-1, jj-1,:], width=0.9)
+            #        plt.bar(range(300), spadcopy[ii-1, jj-1,:300], width=0.9)
+            #        rbin = data['range_bins'][ii-1,jj-1]-1
+            #        selected = spad[ii-1, jj-1]
+            #        #plt.scatter([rbin], [spadcopy[ii-1, jj-1, rbin]], c='g', alpha=0.3)
+            #        #plt.scatter([selected], [spadcopy[ii-1, jj-1, selected]], c='r', alpha=0.7)
+            #        #plt.text(100, 0.4, str(rbin) + " " + str(spadcopy[ii-1, jj-1, :].max()) + " " + str(selected) + str(spadcopy[ii-1, jj-1, selected]) + " " + str(gtvalid[ii-1,jj-1]) + " " + str(data['intensity'][ii-1,jj-1]))
+            #        plt.xlabel('Time (ns)')
+            #        #plt.xticks([x*30 for x in range(10)], [x*30*data['bin_size']*1000000000 for x in range(10)])
+            #        plt.xticks([x*60 for x in range(5)], [x*40 for x in range(5)])
+            #        ax = plt.gca()
+            #        ax.set_ylim([0,8])
+            #        plt.ylabel('Photon Count')
+            #        plt.tight_layout()
+            #        plt.savefig('plots_argmax_filtering_sbr_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
+            #        plt.close()
+
+            #        #inten = data['intensity'].copy()
+            #        #inten[ii-1, :]=1
+            #        #inten[:, jj-1]=1
+            #        #plt.imshow(inten)
+            #        #plt.savefig('plots_argmax_filtering_sbr_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
+
 
             correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
             dist = tof2depth(spad*data['bin_size'])
@@ -434,23 +484,6 @@ def main(args):
             density = density.reshape(-1)
             correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
     
-            #for ii in range(nr//2+10, nr//2+15):
-            #    for jj in range(1, nc+1):
-            #        plt.close()
-            #        plt.figure().set_figwidth(24)
-            #        plt.bar(range(nt), spadcopy[ii-1, jj-1,:], width=0.9)
-            #        rbin = data['range_bins'][ii-1,jj-1]-1
-            #        selected = spad[ii-1, jj-1]
-            #        plt.scatter([rbin], [spadcopy[ii-1, jj-1, rbin]], c='g', alpha=0.3)
-            #        plt.scatter([selected], [spadcopy[ii-1, jj-1, selected]], c='r', alpha=0.7)
-            #        plt.text(100, 0.4, str(rbin) + " " + str(spadcopy[ii-1, jj-1, :].max()) + " " + str(selected) + str(spadcopy[ii-1, jj-1, selected]) + " " + str(gtvalid[ii-1,jj-1]) + " " + str(data['intensity'][ii-1,jj-1]))
-            #        plt.savefig('plots_argmax_filtering_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
-            #        plt.close()
-            #        inten = data['intensity'].copy()
-            #        inten[ii-1, :]=1
-            #        inten[:, jj-1]=1
-            #        plt.imshow(inten)
-            #        plt.savefig('plots_argmax_filtering_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
         
             dist = tof2depth(spad*data['bin_size'])
         
@@ -604,7 +637,7 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     ##UPPER = int((cfmax+0.5))
     ##bins = [x for x in range(UPPER)]
-    #IMAGE_DIR = 'figs_sbr_gauss'
+    #IMAGE_DIR = 'figs_sbr_paper'
 
     #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
@@ -628,16 +661,36 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
-    #bins = [x*0.001 for x in range(101)]
+    #bins = [x*0.001 for x in range(51)]
     #plt.hist(all_correct_sp, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/pointsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.xlabel('Probability')
+    #if(args.sbr=='5_50'):
+    #    plt.ylabel('Number of Points')
+    #plt.locator_params(axis='x', nbins=3)
+    #plt.locator_params(axis='y', nbins=3)
+    #ax = plt.gca()
+    #ax.set_ylim([0,100000])
+    #formatter = FuncFormatter(human_format)
+    #ax.yaxis.set_major_formatter(formatter)
+    #plt.tight_layout()
+    #plt.savefig(IMAGE_DIR + '/pointsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
 
     #plt.close()
-    #bins = [x*0.001 for x in range(101)]
+    #bins = [x*0.001 for x in range(51)]
     #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
+    #plt.xlabel('NPD Score')
+    #if(args.sbr=='5_50'):
+    #    plt.ylabel('Number of Points')
+    #plt.locator_params(axis='y', nbins=3)
+    #plt.locator_params(axis='x', nbins=3)
+    #ax = plt.gca()
+    #ax.set_ylim([0,100000])
+    #formatter = FuncFormatter(human_format)
+    #ax.yaxis.set_major_formatter(formatter)
+    #plt.tight_layout()
+    #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
 
     #plt.close()
     #bins = [x*0.001 for x in range(101)]
