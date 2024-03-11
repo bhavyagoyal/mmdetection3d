@@ -21,10 +21,10 @@ module load anaconda/mini/23.3.1
 bootstrap_conda
 conda activate openmmlab
 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=1_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=5_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=1_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
-python -u getdepth.py --method=argmax-filtering-sbr --sbr=5_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
 
 wait
 
