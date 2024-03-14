@@ -255,6 +255,9 @@ class SingleStage3DDetector(Base3DDetector):
             #if(self.new_fps_strat):
             stack_points = stack_points[:,:new_fps,:]
 
+            #ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
+            #stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2])) 
+
             #choices = torch.argsort(stack_points[:,:,self.filter_index], descending=True)
             #stack_points_nonfps = torch.gather(stack_points_nonfps, 1, choices[:,:,None].tile(stack_points_nonfps.shape[2]))
             #ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)

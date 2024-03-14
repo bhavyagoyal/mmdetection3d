@@ -876,10 +876,6 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                                      continue_key)
 
         if hasattr(self, 'o3d_vis'):
-            #self.view_control.set_front([0,-1,0])
-            ##self.view_control.set_lookat([0,4,0])
-            #self.view_control.set_up([0,0,1])
-            #self.view_control.set_zoom(0.5)
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
             if(save_path):
@@ -892,6 +888,16 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if hasattr(self, 'view_port'):
                 self.view_control.convert_from_pinhole_camera_parameters(
                     self.view_port)
+            #self.view_control.set_front([0,-1,0])
+            ##self.view_control.set_lookat([0,4,0])
+            #self.view_control.set_up([0,0,1])
+            ##self.view_control.set_zoom(0.5)
+
+            #STEP=5
+            #STEP_SIZE=5
+            #xcount, ycount = STEP-1, 2*STEP-1
+            #xr, yr = 0, -STEP
+            #count = 0
             self.flag_exit = not self.o3d_vis.poll_events()
             self.o3d_vis.update_renderer()
             # if not hasattr(self, 'view_control'):
@@ -903,9 +909,19 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                 self.last_time = time.time()
                 while time.time(
                 ) - self.last_time < wait_time and self.o3d_vis.poll_events():
+                    #xcount, ycount = (xcount+1)%(4*STEP), (ycount+1)%(4*STEP)
+                    #count+=1
+                    #xr, yr = xr + ((xcount>=2*STEP)*2-1), yr + ((ycount>=2*STEP)*2-1)
+                    #self.view_control.rotate(xr*STEP_SIZE,yr*STEP_SIZE)
                     self.o3d_vis.update_renderer()
                     self.view_port = \
                         self.view_control.convert_to_pinhole_camera_parameters()  # noqa: E501
+                    #if save_path is not None:
+                    #    if not (save_path.endswith('.png') or save_path.endswith('.jpg')):
+                    #        save_path += '.png'
+                    #    sp_rotated = save_path[:-4]+'_'+str(count).zfill(3)+'.png'
+                    #    if(count<=4*STEP and not os.path.exists(sp_rotated)):
+                    #        self.o3d_vis.capture_screen_image(sp_rotated, False)
                 while self.flag_pause and self.o3d_vis.poll_events():
                     self.o3d_vis.update_renderer()
                     self.view_port = \
