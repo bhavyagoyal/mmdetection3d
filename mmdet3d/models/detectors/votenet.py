@@ -95,7 +95,7 @@ class VoteNet(SingleStage3DDetector):
                 - bboxes_3d (:obj:`BaseInstance3DBoxes`): Prediction of bboxes,
                     contains a tensor with shape (num_instances, 7).
         """
-        feats_dict = self.extract_feat(batch_inputs_dict, True)
+        feats_dict = self.extract_feat(batch_inputs_dict)
         points = batch_inputs_dict['points']
         #print(feats_dict.keys(), feats_dict['sa_xyz'][0].shape, feats_dict['sa_xyz'][1].shape)
         #for x in range(feats_dict['sa_xyz'][0].shape[0]):

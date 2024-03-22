@@ -44,12 +44,9 @@ class SingleStage3DDetector(Base3DDetector):
                  data_preprocessor: OptConfigType = None,
                  neighbor_score: float = None,
                  updated_fps: float = None,
-                 new_fps_strat: bool = False,
-                 shuffle_stack: bool = False,
-                 weighted_filtering_score: bool = False,
+                 #weighted_filtering_score: bool = False,
                  post_sort: int = None,
                  filter_index: int = 5,
-                 max_neighbor: int = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -63,12 +60,9 @@ class SingleStage3DDetector(Base3DDetector):
         self.test_cfg = test_cfg
         self.neighbor_score = neighbor_score
         self.updated_fps = updated_fps
-        self.new_fps_strat = new_fps_strat
-        self.shuffle_stack = shuffle_stack
-        self.weighted_filtering_score = weighted_filtering_score
+        #self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort
         self.filter_index = filter_index
-        self.max_neighbor = max_neighbor
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
@@ -123,7 +117,7 @@ class SingleStage3DDetector(Base3DDetector):
                 - bboxes_3d (Tensor): Contains a tensor with shape
                     (num_instances, C) where C >=7.
         """
-        x = self.extract_feat(batch_inputs_dict, True)
+        x = self.extract_feat(batch_inputs_dict)
         results_list = self.bbox_head.predict(x, batch_data_samples, **kwargs)
         predictions = self.add_pred_to_datasample(batch_data_samples,
                                                   results_list)
@@ -155,7 +149,7 @@ class SingleStage3DDetector(Base3DDetector):
         return results
 
     def extract_feat(
-        self, batch_inputs_dict: Dict[str, Tensor], evaluating: bool = False
+        self, batch_inputs_dict: Dict[str, Tensor]
     ) -> Union[Tuple[torch.Tensor], Dict[str, Tensor]]:
         """Directly extract features from the backbone+neck.
 
@@ -174,18 +168,17 @@ class SingleStage3DDetector(Base3DDetector):
         """
         points = batch_inputs_dict['points']
         stack_points = torch.stack(points)
-        K = 1000
+        K = 1000 # using a large number for xyz cordinates of filtered points
         B = stack_points.shape[0]
  
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,self.filter_index].detach().contiguous()
             MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
-            if(self.max_neighbor):
-                MAX_BALL_NEIGHBORS = self.max_neighbor
             ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
 
-            # repeating first output of ball query as it is repeated if neighbors are fewer
+            # ball query returns repeats first neighbor if neighbors are fewer than requested
+            # so, ignore the first neighbor in ball query output
             ball_idxs_first = ball_idxs[:,:,0][:,:,None]
             nonzero_ball_idxs = ((ball_idxs-ball_idxs_first)!=0)
             nonzero_count = nonzero_ball_idxs.sum(-1)
@@ -194,15 +187,15 @@ class SingleStage3DDetector(Base3DDetector):
             neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
             neighbor_probs = neighbor_probs*nonzero_ball_idxs
             neighbor_probs = neighbor_probs.mean(-1)
-            neighbor_probs_weighted = neighbor_probs*points_probs
+            #neighbor_probs_weighted = neighbor_probs*points_probs
            
-            if(self.weighted_filtering_score):
-                ignore_points = neighbor_probs_weighted<self.neighbor_score
-                stack_points = torch.concatenate([stack_points, neighbor_probs_weighted[...,None]], axis=-1)
-                #ignore_points = nonzero_count<self.neighbor_score
-            else: 
-                ignore_points = neighbor_probs<self.neighbor_score
-                stack_points = torch.concatenate([stack_points, neighbor_probs[...,None]], axis=-1)
+            #if(self.weighted_filtering_score):
+            #    ignore_points = neighbor_probs_weighted<self.neighbor_score
+            #    stack_points = torch.concatenate([stack_points, neighbor_probs_weighted[...,None]], axis=-1)
+            #    #ignore_points = nonzero_count<self.neighbor_score
+            #else: 
+            ignore_points = neighbor_probs<self.neighbor_score
+            stack_points = torch.concatenate([stack_points, neighbor_probs[...,None]], axis=-1)
 
             # This updates stack_points
             stack_points_xyzfh = stack_points[...,:4]
@@ -211,16 +204,10 @@ class SingleStage3DDetector(Base3DDetector):
             stack_points_feat[ignore_points]=0
 
             neighbor_probs[ignore_points]=0
-            neighbor_probs_weighted[ignore_points]=0
+            #neighbor_probs_weighted[ignore_points]=0
 
             #if(self.post_sort is not None):
             choices = torch.argsort(stack_points[:,:,self.filter_index], descending=True)
-            #if(self.post_sort>=0):
-            #    choices = torch.argsort(stack_points[:,:,self.post_sort], descending=True)
-            #elif(self.post_sort==-1):
-            #    choices = torch.argsort(neighbor_probs_weighted, descending=True)
-            #else:
-            #    choices = torch.argsort(neighbor_probs, descending=True)
             stack_points = torch.gather(stack_points, 1, choices[:,:,None].tile(stack_points.shape[2]))
             
             # Remove points that are zero probability from filtering step
@@ -237,9 +224,9 @@ class SingleStage3DDetector(Base3DDetector):
             first_point = first_point*(mask.int())
             stack_points += first_point
 
-        if(self.shuffle_stack):
-            ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
-            stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2]))
+        #if(self.shuffle_stack):
+        #    ordering = torch.rand(B, stack_points.shape[1], device=stack_points.device).argsort(-1)
+        #    stack_points = torch.gather(stack_points, 1, ordering[:,:,None].tile(stack_points.shape[2]))
 
         stack_points_nonfps = None
         if(self.updated_fps):
