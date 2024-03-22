@@ -21,7 +21,7 @@ matplotlib.rcParams['text.color'] = 'black'
 matplotlib.rcParams['axes.labelcolor'] = 'black'
 matplotlib.rcParams['xtick.color'] = 'black'
 matplotlib.rcParams['ytick.color'] = 'black'
-matplotlib.rcParams.update({'font.size': 16})
+matplotlib.rcParams.update({'font.size': 20})
 
 sys.path.append('../../../spatio-temporal-csph/')
 from csph_layers import CSPH3DLayer 
@@ -51,22 +51,6 @@ def random_sampling(points, num_points, p=None):
     return points[choices], choices
 
 pulse = [[[0.0000, 0.0000, 0.0000, 0.0000, 0.0001, 0.0013, 0.0105, 0.0520, 0.1528, 0.2659, 0.2743, 0.1676, 0.0607, 0.0130, 0.0017, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]
-
-#def use_o3d(pts, write_text):
-#    pcd = o3d.geometry.PointCloud()
-#
-#    # the method Vector3dVector() will convert numpy array of shape (n, 3) to Open3D format.
-#    # see http://www.open3d.org/docs/release/python_api/open3d.utility.Vector3dVector.html#open3d.utility.Vector3dVector
-#    pcd.points = o3d.utility.Vector3dVector(pts)
-#
-#    # http://www.open3d.org/docs/release/python_api/open3d.io.write_point_cloud.html#open3d.io.write_point_cloud
-#    o3d.io.write_point_cloud("my_pts.ply", pcd, write_ascii=write_text)
-#
-#    # read ply file
-#    pcd = o3d.io.read_point_cloud('my_pts.ply')
-#
-#    # visualize
-#    o3d.visualization.draw_geometries([pcd])
 
 
 # the arg parser
@@ -360,7 +344,9 @@ def main(args):
     if(args.outfolder_prefix):
         global OUTFOLDER
         OUTFOLDER = OUTFOLDER + args.outfolder_prefix + '/'
-
+    
+    sbrstr = args.sbr.split('_')
+    sbrfloat = float(sbrstr[0])/float(sbrstr[1])
     outfolder = OUTFOLDER + args.method + '/' + args.sbr + '/'
     if not os.path.exists(outfolder):
         os.makedirs(outfolder)
@@ -662,11 +648,13 @@ def main(args):
 
     #plt.close()
     #bins = [x*0.001 for x in range(51)]
-    #plt.hist(all_correct_sp, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5)
+    #plt.hist(all_correct_sp, bins, color='g', alpha=0.5, label='Ground Truth')
+    #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5, label='Noise')
     #plt.xlabel('Probability')
     #if(args.sbr=='5_50'):
     #    plt.ylabel('Number of Points')
+    #if(args.sbr=='1_100'):
+    #    plt.legend()
     #plt.locator_params(axis='x', nbins=3)
     #plt.locator_params(axis='y', nbins=3)
     #ax = plt.gca()
@@ -678,11 +666,13 @@ def main(args):
 
     #plt.close()
     #bins = [x*0.001 for x in range(51)]
-    #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5)
-    #plt.xlabel('NPD Score')
+    #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5, label='Ground Truth')
+    #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5, label='Noise')
+    #plt.xlabel('NPD Score\n (SBR='+str(sbrfloat)+')')
     #if(args.sbr=='5_50'):
     #    plt.ylabel('Number of Points')
+    #if(args.sbr=='1_100'):
+    #    plt.legend()
     #plt.locator_params(axis='y', nbins=3)
     #plt.locator_params(axis='x', nbins=3)
     #ax = plt.gca()
