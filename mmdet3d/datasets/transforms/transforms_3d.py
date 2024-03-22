@@ -21,6 +21,7 @@ from mmdet3d.structures.points import BasePoints
 from .data_augment_utils import noise_per_object_v3_
 from itertools import islice, cycle
 
+
 @TRANSFORMS.register_module()
 class RandomDropPointsColor(BaseTransform):
     r"""Randomly set the color of points to all zeros.
@@ -1030,23 +1031,23 @@ class PointSample(BaseTransform):
 
     def __init__(self,
                  num_points: int,
-                 probability_sampling: bool = False,
-                 topk_sampling: bool = False,
+                 #probability_sampling: bool = False,
+                 #topk_sampling: bool = False,
                  firstk_sampling: bool = False,
                  thresh_sampling: float = None,
                  threshall_sampling: float = None,
-                 pre_sort: int = None,
+                 #pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
         self.num_points = num_points
         self.sample_range = sample_range
         self.replace = replace
-        self.probability_sampling = probability_sampling
+        #self.probability_sampling = probability_sampling
         self.topk_sampling = topk_sampling
         self.firstk_sampling = firstk_sampling
         self.thresh_sampling = thresh_sampling
         self.threshall_sampling = threshall_sampling
-        self.pre_sort = pre_sort
+        #self.pre_sort = pre_sort
 
     def _points_random_sampling(
         self,
@@ -1096,16 +1097,16 @@ class PointSample(BaseTransform):
                     far_inds, num_samples, replace=False)
             point_range = near_inds
             num_samples -= len(far_inds)
-        if(self.probability_sampling):
-            # converting to np array to avoid floating point precision errors
-            # which makes sum of probability not 1
-            probs = np.array(points.tensor[:,points.attribute_dims['sampling_prob']])
-            probs = probs/probs.sum(-1, keepdims=True)
-            choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
-        elif(self.topk_sampling):
-            probs = points.tensor[:,4]
-            choices = np.argsort(-1*probs)[:num_samples]
-        elif(self.firstk_sampling):
+        #if(self.probability_sampling):
+        #    # converting to np array to avoid floating point precision errors
+        #    # which makes sum of probability not 1
+        #    probs = np.array(points.tensor[:,points.attribute_dims['sampling_prob']])
+        #    probs = probs/probs.sum(-1, keepdims=True)
+        #    choices = np.random.choice(point_range, num_samples, replace=replace, p = probs)
+        #elif(self.topk_sampling):
+        #    probs = points.tensor[:,4]
+        #    choices = np.argsort(-1*probs)[:num_samples]
+        if(self.firstk_sampling):
             choices = np.arange(min(num_samples, len(points)))
         elif(self.thresh_sampling is not None):
             probs = points.tensor[:,4]
@@ -1119,13 +1120,10 @@ class PointSample(BaseTransform):
             choices = np.random.choice(point_range, num_samples, replace=replace)
 
 
-        if(self.pre_sort is not None):
-            # sort points in decreasing order of probabilities
-            # and restrict FPS to select from first few points
-            #probs = points.tensor[:,points.attribute_dims['sampling_prob']]
-            probs = points.tensor[:,self.pre_sort]
-            probs = probs[choices]
-            choices = choices[np.argsort(-1*probs)]
+        #if(self.pre_sort is not None):
+        #    probs = points.tensor[:,self.pre_sort]
+        #    probs = probs[choices]
+        #    choices = choices[np.argsort(-1*probs)]
 
         if sample_range is not None and not replace:
             choices = np.concatenate((far_inds, choices))

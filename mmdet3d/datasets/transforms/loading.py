@@ -8,7 +8,7 @@ import numpy as np
 from mmcv.transforms import LoadImageFromFile
 from mmcv.transforms.base import BaseTransform
 from mmdet.datasets.transforms import LoadAnnotations
-from mmengine.fileio import get, exists, join_path
+from mmengine.fileio import get
 
 from mmdet3d.registry import TRANSFORMS
 from mmdet3d.structures.bbox_3d import get_box_type
@@ -588,7 +588,6 @@ class LoadPointsFromFile(BaseTransform):
     def __init__(self,
                  coord_type: str,
                  load_dim: int = 6,
-                 cache_prefix: str = None,
                  use_dim: Union[int, List[int]] = [0, 1, 2],
                  shift_height: bool = False,
                  use_color: bool = False,
@@ -607,7 +606,6 @@ class LoadPointsFromFile(BaseTransform):
 
         self.coord_type = coord_type
         self.load_dim = load_dim
-        self.cache_prefix = cache_prefix
         self.use_dim = use_dim
         self.norm_intensity = norm_intensity
         self.norm_probabilities = norm_probabilities
@@ -625,12 +623,7 @@ class LoadPointsFromFile(BaseTransform):
             np.ndarray: An array containing point clouds data.
         """
         try:
-            pts_filename_read = pts_filename
-            if(self.cache_prefix):
-                pts_filename_cached = join_path(self.cache_prefix, pts_filename, backend_args=self.backend_args)
-                if(exists(pts_filename_cached, backend_args=self.backend_args)):
-                    pts_filename_read = pts_filename_cached
-            pts_bytes = get(pts_filename_read, backend_args=self.backend_args)
+            pts_bytes = get(pts_filename, backend_args=self.backend_args)
             points = np.frombuffer(pts_bytes, dtype=np.float32)
         except ConnectionError:
             mmengine.check_file_exist(pts_filename)
@@ -660,8 +653,6 @@ class LoadPointsFromFile(BaseTransform):
         if self.unit_probabilities:
             points[:, 3] = 1.
         if self.norm_probabilities:
-            assert self.load_dim >= 7, \
-                f'When using probabilities norm, expect load dimensions >= 7, got {self.load_dim}'  # noqa: E501
             #points[:,3] = points[:, 3].clip(None, 25)
             points[:, 3] /= points[:, 3].max()
         if self.norm_intensity:
@@ -692,11 +683,6 @@ class LoadPointsFromFile(BaseTransform):
                     points.shape[1] - 2,
                     points.shape[1] - 1,
                 ]))
-        #if(len(self.use_dim)==4):
-        #    attribute_dims['confidence']=4
-        #if(len(self.use_dim)==5):
-        #    attribute_dims['confidence']=4
-        #    attribute_dims['sampling_prob']=5
 
         points_class = get_points_type(self.coord_type)
         points = points_class(
