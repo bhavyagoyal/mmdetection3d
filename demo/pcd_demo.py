@@ -2,7 +2,6 @@
 import logging
 import os
 from argparse import ArgumentParser
-from mmengine.config import Config, ConfigDict, DictAction
 
 from mmengine.logging import print_log
 
