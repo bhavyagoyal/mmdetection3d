@@ -1043,7 +1043,7 @@ class PointSample(BaseTransform):
         self.sample_range = sample_range
         self.replace = replace
         #self.probability_sampling = probability_sampling
-        self.topk_sampling = topk_sampling
+        #self.topk_sampling = topk_sampling
         self.firstk_sampling = firstk_sampling
         self.thresh_sampling = thresh_sampling
         self.threshall_sampling = threshall_sampling
