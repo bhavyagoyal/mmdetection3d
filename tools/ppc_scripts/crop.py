@@ -3,9 +3,8 @@ import cv2
 fname = sys.argv[1]
 fnameout = sys.argv[2]
 img = cv2.imread(fname, cv2.IMREAD_UNCHANGED)
-#img = img[275:975,300:1200,:] #fps samples
-#img = img[275:975,300:1100,:] #fps new example
-#img = img[230:930,660:1130,:]
+#img = img[275:975,300:1200,:] #fps sample using 000001
+#img = img[275:975,300:1100,:] # visualizing 000003
 
 # day 3 exp 5
 #img = img[400:750,700:1200,:] # front

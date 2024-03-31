@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-CHECKPOINT=checkpoints/0.3_all5.pth
 DATAPATH=points_clean8/
-DATAPATH=points_visual/
 
 EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
 CHECKPOINT=${EXPERIMENT}/epoch_12.pth
 SBR=5_100
 DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
+
+# color idxs is -4 for prob and -3 -2 -1 for rgb
+# if using filtering, then -5 and -4 -3 -2 for rgb
 
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
 #	--show-dir outimages  --task lidar_det --show --wait-time 2. --score-thr 0.5 --color-idxs -4 -3 -2 \

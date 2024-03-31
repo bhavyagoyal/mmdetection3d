@@ -47,6 +47,7 @@ class SingleStage3DDetector(Base3DDetector):
                  #weighted_filtering_score: bool = False,
                  post_sort: int = None,
                  filter_index: int = 5,
+                 processed_points: bool = False,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -63,6 +64,7 @@ class SingleStage3DDetector(Base3DDetector):
         #self.weighted_filtering_score = weighted_filtering_score
         self.post_sort = post_sort
         self.filter_index = filter_index
+        self.processed_points = processed_points
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
