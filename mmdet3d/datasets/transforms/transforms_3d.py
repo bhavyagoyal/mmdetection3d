@@ -1033,9 +1033,9 @@ class PointSample(BaseTransform):
                  num_points: int,
                  #probability_sampling: bool = False,
                  #topk_sampling: bool = False,
-                 firstk_sampling: bool = False,
-                 thresh_sampling: float = None,
-                 threshall_sampling: float = None,
+                 firstk_sampling: bool = False, # first n points
+                 thresh_sampling: float = None, # n points above threshold
+                 threshall_sampling: float = None, # all points above threshold
                  #pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
