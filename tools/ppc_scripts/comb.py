@@ -38,9 +38,9 @@ for file in files:
             #    viewall_img[viewid].append(viewimg)
         all_img.append(img)
 
-    all_img = np.concatenate(all_img, axis=1)
+    all_img = np.concatenate(all_img[1:]+[all_img[0]], axis=1)
     cv2.imwrite(os.path.join(dirs[-1], file), all_img)
     #for viewid in range(NUM_VIEWS):
-    #    viewall_img[viewid] = np.concatenate(viewall_img[viewid], axis=1)
+    #    viewall_img[viewid] = np.concatenate(viewall_img[viewid][1:]+[viewall_img[viewid][0]], axis=1)
     #    cv2.imwrite(os.path.join(dirs[-1], file[:-4] + '_' + str(viewid+1).zfill(3) + '.jpg'), viewall_img[viewid])
 
