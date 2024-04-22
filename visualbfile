@@ -2,16 +2,16 @@
 CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
 DATAPATH=points_clean8/
 
-EXPERIMENT=work_dir_py/sbr/0.3/all5/first50000_spupdated0004_post_newfps001/
+EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0004_post_newfps001/
 CHECKPOINT=${EXPERIMENT}/epoch_12.pth
-SBR=5_100
+SBR=5_50
 DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 
 # color idxs is -4 for prob and -3 -2 -1 for rgb
 # if using filtering, then -5 and -4 -3 -2 for rgb
 
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-#	--show-dir outimages  --task lidar_det --show --wait-time 2. --score-thr 0.5 --color-idxs -4 -3 -2 \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 --color-idxs -4 -3 -2 \
 #	--work-dir work_dir_vis/${SBR} \
 #	--cfg-options \
 #	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
@@ -25,31 +25,31 @@ DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 #	model.neighbor_score=0.004 \
 #	model.updated_fps=0.01 \
 #	model.post_sort=4 \
-
-
-#	#model.new_fps_strat=True \
-##	--norm-color \
-
-
-#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#
+#
+##	#model.new_fps_strat=True \
+###	--norm-color \
+#
+#
+#EXPERIMENT=work_dir_py/sbr/0.3/joint/thresh50000_10/
 #CHECKPOINT=${EXPERIMENT}/epoch_12.pth
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-#	--show-dir outimages  --task lidar_det  --show --wait-time 2.0 --score-thr 0.5 \
-#	--work-dir work_dir_vis/${SBR}_thresh \
+#	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 \
+#	--work-dir work_dir_vis/${SBR}_thresh50000 \
 #	--cfg-options \
 #	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
 #	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
 #	test_dataloader.dataset.pipeline.0.load_dim=8 \
 #	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,5,6,7]" \
 #	test_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.0 \
-#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=20000 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
 #	model.processed_points=True \
-#
-#
-#EXPERIMENT=work_dir_py/sbr/0.3/all5/first2048/
+
+
+#EXPERIMENT=work_dir_py/sbr/0.3/joint/point2048/
 #CHECKPOINT=${EXPERIMENT}/epoch_12.pth
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-#	--show-dir outimages  --task lidar_det  --show --wait-time 2.0 --score-thr 0.5 --load-pts-again \
+#	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 --load-pts-again \
 #	--work-dir work_dir_vis/${SBR}_argmax \
 #	--cfg-options \
 #	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
@@ -57,15 +57,16 @@ DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 #	test_dataloader.dataset.pipeline.0.load_dim=8 \
 #	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,6,7]" \
 #	test_dataloader.dataset.pipeline.1.transforms.2.num_points=2048 \
-#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 #	model.processed_points=True \
 
 
+	#test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+
 ## replace this for gt boxes as well
 #CHECKPOINT=checkpoints/votenet_16x8_sunrgbd-3d-10class_20210820_162823-bf11f014.pth
-#DATAPATH=points_clean8_cache/
+#DATAPATH=points_clean8/
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-#	--show-dir outimages  --task lidar_det  --show --wait-time 2.0 --score-thr 0.5 \
+#	--show-dir outimages  --task lidar_det  --show --wait-time 0.5 --score-thr 0.5 \
 #	--work-dir work_dir_vis/clean \
 #	--cfg-options \
 #	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
@@ -78,7 +79,7 @@ DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 
 
 #EXPERIMENT=work_dir_py/sbr/1.0/score-denoised_sunrgbd1000fastfast/${SBR}/point20000
-#EXPERIMENT=work_dir_py/sbr/0.3/all5/thresh20000_10/
+#EXPERIMENT=work_dir_py/sbr/0.3/joint/thresh50000_10/
 #CHECKPOINT=${EXPERIMENT}/epoch_12.pth
 #DATAPATH=points_min2/1.0/score-denoised_sunrgbd1000fastfast/argmax-filtering-sbr/${SBR}/pcl/
 #CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
@@ -90,7 +91,7 @@ DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 #	test_dataloader.dataset.pipeline.0.load_dim=8 \
 #	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,3,4,5,6,7]" \
 #	test_dataloader.dataset.pipeline.0.unit_probabilities=True \
-#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=20000 \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
 #	model.processed_points=True \
 
 
@@ -106,3 +107,6 @@ DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 
 
 # Change loading.py, dataset config, tools/test.py drawgt flag, in bfile change pipleine.1 to pipeline.2
+# change wait time to 2.0 to see 20 views
+
+

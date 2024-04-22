@@ -121,6 +121,10 @@ exps/
 *~
 mmdet3d/.mim
 
+results_top/
+centroids/
+
+
 # Pytorch
 *.pth
 
