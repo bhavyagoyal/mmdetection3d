@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:gtx1080:2
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler05
+#SBATCH --exclude=euler05,euler01
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=mmdt3d
@@ -26,10 +26,12 @@
 
 
 # Load Environment
-module load anaconda/mini/23.3.1
+#module load anaconda/mini/23.3.1
+module load conda/miniforge/23.1.0
 module load nvidia/cuda/11.8.0
 bootstrap_conda
 conda activate openmmlab
+export CUDA_HOME=/opt/apps/cuda/x86_64/11.8.0/default
 
 GPUS=2
 PORTUSED=$(( $RANDOM + 10000 ))
@@ -55,13 +57,18 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	param_scheduler.0.end=12 \
 	param_scheduler.0.milestones=[8,10] \
 	train_cfg.max_epochs=12 \
+	train_dataloader.dataset.dataset.pipeline.4.firstk_sampling=True \
+	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 	model.post_sort=4 \
 	model.updated_fps=0.01 \
 	model.neighbor_score=0.004 \
 	model.filter_index=4 \
-	train_dataloader.dataset.dataset.pipeline.4.firstk_sampling=True \
-	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 
+
+
+
+	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=3 \
+	#val_dataloader.dataset.pipeline.0.unit_probabilities=3 \
 
 
 ## Baselines 
