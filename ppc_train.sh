@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:gtx1080:2
+#SBATCH --gres=gpu:2
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
@@ -59,12 +59,10 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_cfg.max_epochs=12 \
 	train_dataloader.dataset.dataset.pipeline.4.firstk_sampling=True \
 	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
-	model.post_sort=4 \
-	model.updated_fps=0.01 \
 	model.neighbor_score=0.004 \
 	model.filter_index=4 \
-
-
+	model.post_sort=4 \
+	model.updated_fps=0.01 \
 
 
 	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=3 \
