@@ -880,6 +880,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             #    f.write(self.o3d_vis.get_view_status())
             if(save_path):
                 camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
+                #camfile = 'flim/' + '000001-camera.json'
                 if(os.path.exists(camfile)): 
                     with open(camfile, 'rb') as f:
                         self.o3d_vis.set_view_status(f.read().strip())

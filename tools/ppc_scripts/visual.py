@@ -20,16 +20,16 @@ points = points.reshape(-1,8)
 #points = points.reshape(-1,6)
 #points = points.reshape(-1, 6)[:,:3]
 
-#points_color = points[:,4]
+points_color = points[:,4]
 #points_color = points[:,5:8]
-#points_color = points_color/points_color.max()
-#points_color = sns.color_palette('coolwarm', as_cmap=True)(points_color)[:,:3]
+points_color = points_color/points_color.max()
+points_color = sns.color_palette('coolwarm', as_cmap=True)(points_color)[:,:3]
 
 points = points[:,:3]
 visualizer = Det3DLocalVisualizer()
 
-visualizer.set_points(points, pcd_mode=2, vis_mode='add')
-#visualizer.set_points(points, pcd_mode=2, vis_mode='add', points_color = points_color)
+#visualizer.set_points(points, pcd_mode=2, vis_mode='add')
+visualizer.set_points(points, pcd_mode=2, vis_mode='add', points_color = points_color)
     
 visualizer.show()
 
