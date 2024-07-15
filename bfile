@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
+###SBATCH --partition=euler-next
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:gtx1080:2
+#SBATCH --gres=gpu:a100:1
 #SBATCH --mem=40G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler05,euler01
+####SBATCH --exclude=euler05,euler01
+#SBATCH --exclude=euler01,euler02,euler03,euler04,euler05,euler06,euler07,euler08,euler09,euler11,euler12,euler14
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=mmdt3d
@@ -36,16 +38,18 @@ export CUDA_HOME=/opt/apps/cuda/x86_64/11.8.0/default
 # Print GPU usage
 #nvidia-smi
 
-GPUS=2
+GPUS=1
 PORTUSED=$(( $RANDOM + 10000 ))
 
 #EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0004_post_newfps001_repeat
-#EXPERIMENT=work_dir_py/kitti/car/baseline
+EXPERIMENT=work_dir_py/kitti/pointpillar/3class/baseline
+EXPERIMENT=work_dir_py/kittifusion/mvxnet/baseline_b4
 ##DATAPATH=/0.3/argmax-filtering-sbr/
-#PORT=${PORTUSED} ./tools/dist_train.sh configs/pointpillars/pointpillars_hv_secfpn_8xb6-160e_kitti-3d-car.py ${GPUS} --cfg-options \
-#	work_dir=${EXPERIMENT} \
-
-
+#PORT=${PORTUSED} ./tools/dist_train.sh configs/pointpillars/pointpillars_hv_secfpn_8xb6-160e_kitti-3d-3class.py ${GPUS} --auto-scale-lr --resume --cfg-options \
+PORT=${PORTUSED} ./tools/dist_train.sh configs/mvxnet/mvxnet_fpn_dv_second_secfpn_8xb2-80e_kitti-3d-3class.py ${GPUS} --auto-scale-lr --resume  --cfg-options \
+	work_dir=${EXPERIMENT} \
+	train_dataloader.batch_size=4 \
+	default_hooks.checkpoint.interval=1 \
 
 
 
