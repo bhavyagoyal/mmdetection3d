@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:gtx1080:2
 #SBATCH --mem=36G
 #SBATCH --time=48:0:0
 ###SBATCH --nodelist=euler28
-#SBATCH --exclude=euler05,euler01
+#SBATCH --exclude=euler05,euler01,euler07
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=mmdt3d
@@ -38,7 +38,7 @@ PORTUSED=$(( $RANDOM + 10000 ))
 
 
 # PPC Model Training
-EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0004_post_newfps001
+EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0003
 DATAPATH=points_min2/0.3/argmax-filtering-sbr/
 PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
@@ -59,10 +59,13 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	train_cfg.max_epochs=12 \
 	train_dataloader.dataset.dataset.pipeline.4.firstk_sampling=True \
 	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
-	model.neighbor_score=0.004 \
+	model.neighbor_score=0.003 \
 	model.filter_index=4 \
-	model.post_sort=4 \
-	model.updated_fps=0.01 \
+
+
+
+	#model.post_sort=4 \
+	#model.updated_fps=0.01 \
 
 
 	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=3 \
@@ -115,4 +118,4 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 #	train_cfg.max_epochs=12 \
 #	val_dataloader.dataset.pipeline.1.transforms.2.thresh_sampling=1.0 \
 #	train_dataloader.dataset.dataset.pipeline.4.thresh_sampling=1.0 \
-#
+
