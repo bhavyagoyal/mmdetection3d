@@ -229,7 +229,7 @@ class Det3DVisualizationHook(Hook):
                     data_input['points'] = points
                 else:
                     data_input['points'] = data_sample.processed_points[0]
-                data_input['points'] = data_input['points'][:10000,[0,1,2]+self.color_idxs]
+                data_input['points'] = data_input['points'][:,[0,1,2]+self.color_idxs]
                 #data_input['points'] = data_batch['inputs']['points'][0][:10000,:]
                 if self.test_out_dir is not None:
                     o3d_save_path = osp.basename(lidar_path).split(

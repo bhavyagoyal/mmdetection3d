@@ -15,7 +15,10 @@ for file in files:
     viewall_img = [[] for x in range(NUM_VIEWS)]
     x1, x2, y1, y2 = None, None, None, None
     for curr_dir in dirs[:-1]:
-        img = cv2.imread(os.path.join(curr_dir,file), cv2.IMREAD_UNCHANGED)
+        readfname = os.path.join(curr_dir,file)
+        if(curr_dir.split('/')[-1]=='image'):
+            readfname = readfname[:-4]+'.jpg'
+        img = cv2.imread(readfname, cv2.IMREAD_UNCHANGED)
         if(len(all_img)==0):
             x, y = np.where(img[:,:,0]>0)
             x1, x2 = min(x), max(x)
