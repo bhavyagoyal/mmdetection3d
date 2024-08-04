@@ -38,7 +38,7 @@ PORTUSED=$(( $RANDOM + 10000 ))
 
 
 # PPC Model Training
-EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0003
+EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0003_post_newfpsX/first50000_spupdated0003_post_newfps0005
 DATAPATH=points_min2/0.3/argmax-filtering-sbr/
 PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
@@ -61,11 +61,8 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 	val_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
 	model.neighbor_score=0.003 \
 	model.filter_index=4 \
-
-
-
-	#model.post_sort=4 \
-	#model.updated_fps=0.01 \
+	model.post_sort=4 \
+	model.updated_fps=0.005 \
 
 
 	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=3 \
