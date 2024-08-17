@@ -2,11 +2,9 @@ import cv2, sys, os
 import argparse
 import scipy.io
 import scipy.signal
-# import open3d as o3d
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D
 import random
 import torch
 from mmcv.ops.ball_query import ball_query
@@ -23,23 +21,19 @@ matplotlib.rcParams['xtick.color'] = 'black'
 matplotlib.rcParams['ytick.color'] = 'black'
 matplotlib.rcParams.update({'font.size': 20})
 
-sys.path.append('../../../spatio-temporal-csph/')
-from csph_layers import CSPH3DLayer 
 
-BASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-OUTFOLDER = BASE + '../points_testing/'
-#OUTFOLDER = '/scratch/bhavya/points_baseline/3dcnndenoise-argmax/'
-GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+SUNRGBDBASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
+KITTIBASE = "/srv/home/bgoyal2/datasets/kitti/"
+#GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr/nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-NUM_PEAKS=3 # upto NUM_PEAKS peaks are selected
-NUM_PEAKS_START = 110
+OUTFOLDERNAME = 'points'
+
 CORRECTNESS_THRESH = 25
-SAMPLED_POINTS=50000
+SAMPLED_POINTS=50000 # for sun rgbd
 
-scenes = open(BASE + 'all_data_idx.txt').readlines()
-scenes = [x.strip() for x in scenes]
 
-metadata = scipy.io.loadmat(BASE + SUNRGBDMeta)['SUNRGBDMeta'][0]
+metadata = None
 
 C = 3e8
 def tof2depth(tof):
@@ -58,14 +52,24 @@ def parse_args():
     parser = argparse.ArgumentParser(description='.mat simulation file to point cloud')
     parser.add_argument(
         '--method',
-        choices=['denoise', 'argmax-filtering', 'argmax-filtering-sbr', 'gaussfilter-argmax-filtering-sbr', 'argmax-filtering-conf', 'peaks-confidence', 'decompressed-peaks-confidence', 'decompressed-argmax', 'peakswogtvalid-confidence', 'gaussfilter-peaks-confidence'],
-        default='peaks-confidence',
+        choices=['argmax-filtering-sbr', 'gaussfilter-argmax-filtering-sbr'],
+        default='argmax-filtering-sbr',
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
         choices=['5_1', '5_50', '5_100', '1_50', '1_100'],
         default='1_50',
         help='SBR')
+    parser.add_argument(
+        '--dataset',
+        choices=['sunrgbd', 'kitti'],
+        default='sunrgbd',
+        help='select a dataset')
+    parser.add_argument(
+        '--split',
+        choices=['training', 'testing'],
+        default='testing',
+        help='select a dataset')
     parser.add_argument('--num_peaks', default=None, type=int,
                     help='num peaks for each pixel')
     parser.add_argument('--threshold', default=None, type=float,
@@ -84,164 +88,6 @@ def camera_params(K):
     cx, cy = K[0,2], K[1,2]
     fx, fy = K[0,0], K[1,1]
     return cx, cy, fx, fy
-
-nt_compression = 1024
-csph1D_obj = None
-
-# Does compression and decompression
-def decompress(spad):
-    assert spad.shape[2]==nt_compression
-    spad_out = spad.transpose(2,0,1)
-    spad_out = torch.from_numpy(spad_out[None,None,...])
-    spad_out = csph1D_obj(spad_out)[0,0,...].numpy()
-    spad_out = spad_out.transpose(1,2,0)
-    return spad_out
-
-
-# Find peaks and converts to point cloud
-def peakpoints(nr, nc, K, bin_size, spad, gtvalid, Rtilt, rbins, intensity, peaks_post_processing=True, decompressed=False, gaussian_filter_pulse=False):
-    xx = np.linspace(1, nc, nc)
-    yy = np.linspace(1, nr, nr)
-    x, y = np.meshgrid(xx, yy)
-    cx, cy, fx, fy = camera_params(K)
-    xa = (x - cx)/fx
-    ya = (y - cy)/fy
-    xa, ya = xa[:,:,np.newaxis], ya[:,:,np.newaxis]
-    nt = spad.shape[2]
-    # Removing first few bins
-    spad[:,:,:5] = 0
-
-    if(decompressed):
-        # compress and decompress using truncated fourier
-        spad_copy = copy.deepcopy(spad)
-        spad = decompress(spad)
-    elif(gaussian_filter_pulse):
-        gf_pulse = np.zeros((5,5,22))
-        gf_pulse[2,2,:] = pulse[0][0]
-        gf_pulse = skimage.filters.gaussian(gf_pulse,sigma=1.0)
-        gf_pulse = gf_pulse/gf_pulse.sum()
-        spad = scipy.signal.convolve(spad, gf_pulse, mode='same')
-    else:
-        spad = scipy.signal.convolve(spad, pulse, mode='same')
-
-    allpeaks = np.zeros((nr, nc, NUM_PEAKS_START))
-    if(True):
-        for ii in range(1, nr+1):
-            for jj in range(1, nc+1):
-                #peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=2)[0][:NUM_PEAKS_START]
-                if(peaks_post_processing):
-                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.3)[0][:NUM_PEAKS_START]
-                else:
-                    # Use height 0 as after convolve, spad can have very small negative numbers instead of 0
-                    # it uses fourier transform for fast calculation
-                    peaks = scipy.signal.find_peaks(spad[ii-1, jj-1,:], distance=10, height=0.)[0][:NUM_PEAKS_START]
-                allpeaks[ii-1,jj-1,:len(peaks)]=peaks
-    
-        allpeaks = allpeaks.astype(int)
-        density = spad[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], allpeaks]
-    
-        dp = np.stack([density, allpeaks])
-        dpindex = dp[0,:,:,:].argsort(axis=-1)
-        dpindex = dpindex[:,:,::-1]
-     
-        density = dp[0,:,:,:]
-        density = density[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
-        allpeaks = dp[1,:,:,:]
-        allpeaks = allpeaks[np.arange(nr)[:, np.newaxis, np.newaxis], np.arange(nc)[np.newaxis, :, np.newaxis], dpindex]
-    
-    density = density[:,:,:NUM_PEAKS]
-    allpeaks = allpeaks[:,:,:NUM_PEAKS].astype(int)
-    #print('All Peaks ', np.count_nonzero(allpeaks==0))
-
-    if(peaks_post_processing):
-        maxdensity = density.max(axis=-1, keepdims=True)
-        removepeaks = density<(maxdensity-0.5)
-        density[removepeaks]=0.
-        allpeaks[removepeaks]=0
-
-    total_sampling_prob = density.sum(-1, keepdims=True)
-    total_sampling_prob[total_sampling_prob<1e-9]=1
-    sampling_prob = density/total_sampling_prob
-    # we might drop a few points later, if they are farther than 65.356 depth
-    # which would make sum non 1, but ignoring that for now.
-
-
-    # Can remove points that are too close to camera
-    # Few examples that I saw, 58 was the min bin count
-    #removepeaks = allpeaks<50
-    #density[removepeaks]=0.
-    #allpeaks[removepeaks]=0
-
-
-
-    #for ii in range(nr//2+10, nr//2+12):
-    #    for jj in range(1, nc+1):
-    #        rbin = rbins[ii-1,jj-1]-1
-    #        peaks = allpeaks[ii-1, jj-1,:]
-    #        plt.close()
-    #        plt.figure().set_figwidth(24)
-
-    #        plt.subplot(2,1,1)
-    #        plt.bar(range(nt), spad[ii-1, jj-1,:], width=0.9)
-    #        plt.scatter([rbin], [spad[ii-1, jj-1, rbin]], c='g', alpha=0.3)
-    #        plt.scatter(peaks, [spad[ii-1, jj-1, peaks]], c='r', alpha=0.7)
-    #        plt.text(100, 0, str(rbin) + " " + str(spad[ii-1, jj-1].max()) + " " + str(peaks) + " " + str(density[ii-1,jj-1]) )
-    #        plt.subplot(2,1,2)
-    #        plt.bar(range(nt), spad_copy[ii-1, jj-1,:], width=0.9)
-
-    #        plt.savefig('plots_compress32_filteringpeaks_1_50/fig_' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
-
-    #        plt.close()
-    #        inten = intensity.copy()
-    #        inten[ii-1, :]=1
-    #        inten[:, jj-1]=1
-    #        plt.imshow(inten)
-    #        plt.savefig('plots_compress32_filteringpeaks_1_50/fig_' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
-
-
-    # Only using this for visualization. These points are approximately correct depth
-    correct = abs(np.repeat(rbins[:,:,np.newaxis], NUM_PEAKS, axis=-1) - allpeaks)<=CORRECTNESS_THRESH
-
-    dists = tof2depth(allpeaks*bin_size)
-    depths = dists/(xa**2 + ya**2 + 1)**0.5
-
-    #print(allpeaks[73,313,:])
-    #print(dists[73,313,:])
-    #print(depths[73,313,:])
-    #print(np.count_nonzero(depths==0))
-
-    depths = depths*1000.
-    depths = depths.astype(np.uint16)
-    depths = (depths>>3)<<3
-    depths = depths*gtvalid[:,:,np.newaxis]
-
-    depths = (depths>>3 | np.uint16(depths<<13))
-    depths = depths.astype('float32')/1000.
-    depths[depths>8]=8
-    X = xa*depths
-    Y = ya*depths
-    Z = depths
-
-    #AA = set(zip(*np.nonzero(Z==0)))
-    #AA2 = set(zip(*np.nonzero(X==0)))
-    #AA3 = set(zip(*np.nonzero(Y==0)))
-    #BB = set(zip(*np.nonzero(dists==0)))
-    #gtvalidthree = np.tile(gtvalid[:,:,None],3)
-    #CC = set(zip(*np.nonzero(gtvalidthree==0)))
-    #DD = AA - (CC|BB)
-    #DD2 = AA2 - (CC|BB)
-    #DD3 = AA3 - (CC|BB)
-    #print(len(BB), sorted(list(BB)))
-    #print(len(AA), len(BB), len(CC))
-    #print(len(DD), sorted(list(DD)))
-    #print(len(DD2), sorted(list(DD2)))
-    #print(len(DD3), sorted(list(DD3)))
-    #print(depths[73,313,:])
-
-    points3d = np.stack([X, Z, -Y])
-    points3d, density, sampling_prob = points3d.reshape((3,-1)), density.flatten(), sampling_prob.flatten()
-    points3d = np.matmul(Rtilt, points3d)
-    return points3d, density, sampling_prob, correct, np.tile(xa, NUM_PEAKS).flatten(), np.tile(ya, NUM_PEAKS).flatten()
 
 # Convert dist to depth
 def finaldepth(nr, nc, K, dist, gtvalid):
@@ -280,19 +126,30 @@ def depth2points(nr, nc, K, depthmap, Rtilt):
     points3d = np.matmul(Rtilt, points3d)
     return points3d
 
-# density is just height of each bin, can normalize it in inference code
-def argmaxfiltering(spad):
-    spaddensity = scipy.signal.convolve(spad, pulse, mode='same')
-    return spaddensity.argmax(-1), spaddensity.max(-1)
+# Sphertical to cartesian cordinates
+def sph2cart(az, el, r):
+    rcos_theta = r * np.cos(el)
+    x = rcos_theta * np.cos(az)
+    y = rcos_theta * np.sin(az)
+    z = r * np.sin(el)
+    return x, y, z
 
 
-def argmaxfilteringsbr(spad, decompressed=False, gaussian_filter_pulse=False):
+# Convert spherical cordinates to point cloud
+def dist2points(nr, nc, dist, az, el):
+    X, Y, Z = sph2cart(az, el, dist)
+    points3d = np.stack([X, Y, Z])
+    points3d = points3d.reshape((3,-1))
+    return points3d
+
+
+
+def argmaxfilteringsbr(spad, gaussian_filter_pulse=False):
     spad[:,:,:20] = 0
-    if(decompressed):
-        # compress and decompress using truncated fourier
-        spad_copy = copy.deepcopy(spad)
-        spad = decompress(spad)
-    elif(gaussian_filter_pulse):
+    #if(decompressed):
+    #    # compress and decompress using truncated fourier
+    #    spad = decompress(spad)
+    if(gaussian_filter_pulse):
         gf_pulse = np.zeros((5,5,22))
         gf_pulse[2,2,:] = pulse[0][0]
         gf_pulse = skimage.filters.gaussian(gf_pulse,sigma=1.0)
@@ -303,23 +160,6 @@ def argmaxfilteringsbr(spad, decompressed=False, gaussian_filter_pulse=False):
 
     spadargmax, spadmax = spad.argmax(-1), spad.max(-1)
     return spadargmax, spadmax, spad.sum(-1)
-
-# density is just height of each bin, can normalize it in inference code
-def argmaxdecompressed(spad):
-    spad = decompress(spad)
-    return spad.argmax(-1)
-
-
-# random tie breaker for argmax on raw histogram bins
-def argmaxrandomtie(spad):
-    maxval = spad.max(axis=-1, keepdims=True)
-    maxmatrix = spad == maxval
-    
-    spadmax = np.zeros(spad.shape[:2], dtype=np.int32)
-    for i in range(spad.shape[0]):
-        for j in range(spad.shape[1]):
-            spadmax[i,j] = np.random.choice(np.flatnonzero(maxmatrix[i,j,:]))
-    return spadmax
 
 
 def human_format(num, pos):
@@ -332,72 +172,81 @@ def human_format(num, pos):
 
 
 def main(args):
-    
+
+    if(args.dataset=='sunrgbd'):
+        global metadata
+        basefolder = SUNRGBDBASE
+        metadata = scipy.io.loadmat( os.path.join(basefolder,SUNRGBDMeta) )['SUNRGBDMeta'][0]
+    else:
+        basefolder = os.path.join(KITTIBASE, args.split)
+
+    outfolder = os.path.join(basefolder, OUTFOLDERNAME)
+    if(args.outfolder_prefix):
+        outfolder = os.path.join(outfolder, args.outfolder_prefix)
+
+    sbrstr = args.sbr.split('_')
+    sbrfloat = float(sbrstr[0])/float(sbrstr[1])
+    outfolder = os.path.join(outfolder, args.method, args.sbr)
+    if not os.path.exists(outfolder):
+        os.makedirs(outfolder)
+
+
+    # Only for visualization
+    #all_correct_cf, all_incorrect_cf = [], []
+    #all_correct_sp, all_incorrect_sp = [], []
+    #all_correct_neighcount, all_incorrect_neighcount = [], []
+    #all_correct_neighcf, all_incorrect_neighcf = [], []
+    #all_correct_neighsp, all_incorrect_neighsp = [], []
+    #all_correct_neighcfweighted, all_incorrect_neighcfweighted = [], []
+    #all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
+    #cfmax = 0
+
+    scenes = open(os.path.join(basefolder, 'all_data_idx.txt')).readlines()
+    scenes = [x.strip() for x in scenes]
+
     start, end = 0, len(scenes)
     if(args.start is not None):
         start = args.start
     if(args.end is not None):
         end = args.end
-    if(args.num_peaks):
-        global NUM_PEAKS
-        NUM_PEAKS = args.num_peaks
-    if(args.outfolder_prefix):
-        global OUTFOLDER
-        OUTFOLDER = OUTFOLDER + args.outfolder_prefix + '/'
-    
-    sbrstr = args.sbr.split('_')
-    sbrfloat = float(sbrstr[0])/float(sbrstr[1])
-    outfolder = OUTFOLDER + args.method + '/' + args.sbr + '/'
-    if not os.path.exists(outfolder):
-        os.makedirs(outfolder)
-
-    if('decompress' in args.method):
-        csph1D_obj = CSPH3DLayer(k=32, num_bins=nt_compression, tblock_init='TruncFourier', optimize_codes=False, encoding_type='csph1d', zero_mean_tdim_codes=True)
-        csph1D_obj.to(device='cpu')
-
-    all_correct_cf, all_incorrect_cf = [], []
-    all_correct_sp, all_incorrect_sp = [], []
-    all_correct_neighcount, all_incorrect_neighcount = [], []
-    all_correct_neighcf, all_incorrect_neighcf = [], []
-    all_correct_neighsp, all_incorrect_neighsp = [], []
-    all_correct_neighcfweighted, all_incorrect_neighcfweighted = [], []
-    all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
-    cfmax = 0
 
     #scenes_selected = random.sample(scenes, 10) # for vis 
     scenes_selected = scenes[start:end]
     for scene in scenes_selected:
         print(scene)
-        OUTFILE = outfolder + scene.zfill(6) +'.bin'
+        OUTFILE = os.path.join(outfolder, scene.zfill(6) +'.bin')
         if(os.path.exists(OUTFILE)):
             continue
-        mat_file = BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat'
+        #mat_file = BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat'
+        mat_file = os.path.join(basefolder, GEN_FOLDER, 'spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
         data = scipy.io.loadmat(mat_file)
     
         nr, nc = data['intensity'].shape
         nt = data['num_bins'][0,0]
-        Rtilt = metadata[int(scene)-1][1]
-        K = metadata[int(scene)-1][2]
-    
-        depthpath = '../OFFICIAL_SUNRGBD' + metadata[int(scene)-1][3][0][16:]
-        rgbpath = '../OFFICIAL_SUNRGBD' + metadata[int(scene)-1][4][0][16:]
-        # Using Depth map to remove points that are NAN in original depth image, using gtvalid
-        # Simulation script for histograms inpaints NAN depths
-        # but I am ignoring those points as SUNRGB dataset processing ignores it too.
-        gtdepth = cv2.imread(BASE + depthpath, cv2.IMREAD_UNCHANGED)
-        if(gtdepth is None):
-            print('could not load depth image')
-            exit(0)
-        gtvalid = gtdepth>0 
-        rgb = cv2.imread(BASE + rgbpath, cv2.IMREAD_UNCHANGED)/255.
-        rgb = rgb[:, :, ::-1]  # BGR -> RGB
-        rgb = rgb.transpose(2,0,1) # HWC -> CHW
-        density = None
-        sampling_prob = None
+        if(args.dataset=='sunrgbd'):
+            Rtilt = metadata[int(scene)-1][1]
+            K = metadata[int(scene)-1][2]
+            depthpath = '../OFFICIAL_SUNRGBD' + metadata[int(scene)-1][3][0][16:]
+            rgbpath = '../OFFICIAL_SUNRGBD' + metadata[int(scene)-1][4][0][16:]
+            # Using Depth map to remove points that are NAN in original depth image, using gtvalid
+            # Simulation script for histograms inpaints NAN depths
+            # but I am ignoring those points as SUNRGB dataset processing ignores it too.
+            gtdepth = cv2.imread(os.path.join(basefolder, depthpath), cv2.IMREAD_UNCHANGED)
+            if(gtdepth is None):
+                print('could not load depth image')
+                exit(0)
+            gtvalid = gtdepth>0 
+            rgb = cv2.imread( os.path.join(basefolder, rgbpath), cv2.IMREAD_UNCHANGED)/255.
+            rgb = rgb[:, :, ::-1]  # BGR -> RGB
+            rgb = rgb.transpose(2,0,1) # HWC -> CHW
+            rgb = rgb.reshape((3, -1)).T
+        else:
+            az = data['az']
+            el = data['el']
     
         # Subtract 1 from range bins to get the right bin index in python
         # as matlab indexes it from 1
-        # for distance calculation, this is fine
+        # for distance calculation, this is fine to use
         #range_bins = data['range_bins']
         #dist = tof2depth(range_bins*data['bin_size'])
     
@@ -405,164 +254,52 @@ def main(args):
         spad = spad.reshape((nr, nc, nt), order='F')
         #spadcopy = scipy.signal.convolve(spad, pulse, mode='same')
         #spadcopy = spad.copy()
-        #spad = spad.argmax(-1)
-        #spad = argmaxrandomtie(spad)
         if(args.method=='argmax-filtering-sbr'):
-            #spadcopy = spad.copy()
-            #spadcopy = scipy.signal.convolve(spadcopy, pulse, mode='same')
             spad, density, densitysum = argmaxfilteringsbr(spad)
-            #thresh_mask = densitysum>=5.0
-            #spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
-            if(args.threshold is not None):
-                thresh_mask = density>=args.threshold
-                spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
-            density, densitysum = density.reshape(-1), densitysum.reshape(-1)
-
-
-            #for ii in range(nr//2+10, nr//2+15):
-            #    for jj in range(1, nc+1):
-            #        plt.close()
-            #        plt.figure().set_figwidth(14)
-            #        #plt.bar(range(nt), spadcopy[ii-1, jj-1,:], width=0.9)
-            #        plt.bar(range(300), spadcopy[ii-1, jj-1,:300], width=0.9)
-            #        rbin = data['range_bins'][ii-1,jj-1]-1
-            #        selected = spad[ii-1, jj-1]
-            #        #plt.scatter([rbin], [spadcopy[ii-1, jj-1, rbin]], c='g', alpha=0.3)
-            #        #plt.scatter([selected], [spadcopy[ii-1, jj-1, selected]], c='r', alpha=0.7)
-            #        #plt.text(100, 0.4, str(rbin) + " " + str(spadcopy[ii-1, jj-1, :].max()) + " " + str(selected) + str(spadcopy[ii-1, jj-1, selected]) + " " + str(gtvalid[ii-1,jj-1]) + " " + str(data['intensity'][ii-1,jj-1]))
-            #        plt.xlabel('Time (ns)')
-            #        #plt.xticks([x*30 for x in range(10)], [x*30*data['bin_size']*1000000000 for x in range(10)])
-            #        plt.xticks([x*60 for x in range(5)], [x*40 for x in range(5)])
-            #        ax = plt.gca()
-            #        ax.set_ylim([0,8])
-            #        plt.ylabel('Photon Count')
-            #        plt.tight_layout()
-            #        plt.savefig('plots_argmax_filtering_sbr_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_hist.png', dpi=500)
-            #        plt.close()
-
-            #        #inten = data['intensity'].copy()
-            #        #inten[ii-1, :]=1
-            #        #inten[:, jj-1]=1
-            #        #plt.imshow(inten)
-            #        #plt.savefig('plots_argmax_filtering_sbr_' + args.sbr + '/fig' + str(ii-1) + '_' + str(jj-1)+ '_depth.png')
-
-
-            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
-            dist = tof2depth(spad*data['bin_size'])
-            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
         elif(args.method=='gaussfilter-argmax-filtering-sbr'):
             spad, density, densitysum = argmaxfilteringsbr(spad, gaussian_filter_pulse=True)
-            if(args.threshold is not None):
-                thresh_mask = density>=args.threshold
-                spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
-            density, densitysum = density.reshape(-1), densitysum.reshape(-1)
-
-            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
-            dist = tof2depth(spad*data['bin_size'])
-            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-        elif(args.method=='argmax-filtering-conf'):
-            spad, density = argmaxfiltering(spad)
-            if(args.threshold is not None):
-                thresh_mask = density>=args.threshold
-                spad, density = spad*thresh_mask, density*thresh_mask
-            density = density.reshape(-1)
-            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
-    
-        
-            dist = tof2depth(spad*data['bin_size'])
-        
-            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-        elif(args.method=='decompressed-argmax'):
-            spad = argmaxdecompressed(spad)
-            correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
-
-            dist = tof2depth(spad*data['bin_size'])
-        
-            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-        elif(args.method=='denoise'):
-            denoised = np.load(mat_file+'.npz')
-            denoised = denoised['spad_denoised_argmax']
-            correct = abs(data['range_bins']-denoised)<=CORRECTNESS_THRESH
-
-            dist = tof2depth(denoised*data['bin_size'])
-            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
-            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-
-        elif(args.method == 'peaks-confidence'):
-            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'])
-            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
-        elif(args.method == 'gaussfilter-peaks-confidence'):
-            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], gaussian_filter_pulse=True, peaks_post_processing=False)
-            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
-        elif(args.method == 'peakswogtvalid-confidence'):
-            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, np.ones_like(gtvalid), Rtilt, data['range_bins'], data['intensity'], peaks_post_processing = False)
-            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1)    
-        elif(args.method == 'decompressed-peaks-confidence'):
-            points3d, density, sampling_prob, correct, xa, ya = peakpoints(nr, nc, K, data['bin_size'], spad, gtvalid, Rtilt, data['range_bins'], data['intensity'], decompressed = True, peaks_post_processing = False)
-            rgb = np.repeat(rgb[:,:,:,np.newaxis], NUM_PEAKS, axis=-1) 
         else:
-            print('not implemented yet')
+            print('Not implemented')
             exit(0)
 
-        correct = correct.reshape(-1)
-        rgb = rgb.reshape((3, -1))
-
-        valid = np.all(points3d, axis=0) # only select points that have non zero locations    
-        if(density is not None):
-            density = density[valid]
-            densitysum = densitysum[valid]
-        correct = correct[valid]
-        points3d, rgb = points3d.T, rgb.T
-        points3d, rgb = points3d[valid,:], rgb[valid,:]
+        if(args.threshold is not None):
+            thresh_mask = density>=args.threshold
+            spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
         
-        print(points3d.shape[0], gtvalid.sum())
-        num_points = SAMPLED_POINTS
-        if(sampling_prob is not None):
-            sampling_prob = sampling_prob[valid]
-            xa,ya = xa[valid], ya[valid]
+        density, densitysum = density.reshape(-1), densitysum.reshape(-1)
 
-            # xa, ya is pixel cordinates
-            # Sampling num_points pixels and then selecting all peak from those pixels.
-            # so, this allows sampling number of pixels rather than points.
-            xya = list( zip(xa,ya) )
-            all_xya = list( set( xya ) )
-            if(len(all_xya)<=num_points):
-                selected_xy = set(all_xya)
-            else:
-                selected_xy = set(random.sample(all_xya, num_points))
-            choices = []
-            for xy_idx, xy in enumerate(xya):
-                if(xy in selected_xy):
-                    choices.append(xy_idx)
-            assert len(choices)>=num_points
-            points3d = points3d[choices]
+        correct = abs(data['range_bins']-spad)<=CORRECTNESS_THRESH
+        correct = correct.reshape(-1)
 
-            # Earlier I was sampling by sampling_prob, but this does not ensure all peaks from a pixel are included
-            #points3d, choices = random_sampling(points3d, num_points, p=sampling_prob/sampling_prob.sum())
-            #negprobs = -1*sampling_prob[choices]
-            #newchoices = negprobs.argsort()
-            #choices = choices[newchoices]
-            #points3d = points3d[newchoices]
-            sampling_prob = sampling_prob[choices]
+        dist = tof2depth(spad*data['bin_size'])
+        if(args.dataset=='sunrgbd'):
+            depthmap = finaldepth(nr, nc, K, dist, gtvalid)
+            points3d = depth2points(nr, nc, K, depthmap, Rtilt)
+            valid = np.all(points3d, axis=0) # only select points that have non zero locations    
         else:
-            points3d, choices = random_sampling(points3d, num_points)
+            points3d = dist2points(nr, nc, dist, az, el)
+            valid = density>0 # only select points that have positive photon counts    
 
-        if(density is not None):
+
+        density = density[valid]
+        densitysum = densitysum[valid]
+        correct = correct[valid]
+        points3d = points3d.T
+        points3d = points3d[valid,:]
+
+        if(args.dataset=='sunrgbd'):
+            rgb = rgb[valid,:]
+
+            points3d, choices = random_sampling(points3d, SAMPLED_POINTS)
             density = density[choices]
             densitysum = densitysum[choices]
-        rgb = rgb[choices]
-        correct = correct[choices]
+            correct = correct[choices]
+            rgb = rgb[choices]
 
-        if(sampling_prob is not None):
-            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], sampling_prob[:,np.newaxis], rgb], axis=1)
-        elif(density is not None):
             points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis], rgb], axis=1)
         else:
-            points3d_rgb = np.concatenate([points3d, rgb], axis=1)
+            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis]], axis=1)
+
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
         #points_sp = torch.from_numpy(points3d_rgb[:,4]).cuda()[None, :]
