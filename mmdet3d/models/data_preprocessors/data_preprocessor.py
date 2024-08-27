@@ -17,6 +17,7 @@ from mmdet3d.structures.det3d_data_sample import SampleList
 from mmdet3d.utils import OptConfigType
 from .utils import multiview_img_stack_batch
 from .voxelize import VoxelizationByGridShape, dynamic_scatter_3d
+from mmcv.ops.ball_query import ball_query
 
 
 @MODELS.register_module()
@@ -93,6 +94,9 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
                  std: Sequence[Number] = None,
                  pad_size_divisor: int = 1,
                  pad_value: Union[float, int] = 0,
+                 neighbor_score: float = 0,
+                 filter_index: int = 4,
+                 in_channels: int = None,
                  pad_mask: bool = False,
                  mask_pad_value: int = 0,
                  pad_seg: bool = False,
@@ -120,6 +124,9 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
         self.voxel_type = voxel_type
         self.batch_first = batch_first
         self.max_voxels = max_voxels
+        self.neighbor_score = neighbor_score
+        self.filter_index = filter_index
+        self.in_channels = in_channels
         if voxel:
             self.voxel_layer = VoxelizationByGridShape(**voxel_layer)
 
@@ -170,6 +177,40 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
         data = self.collate_data(data)
         inputs, data_samples = data['inputs'], data['data_samples']
         batch_inputs = dict()
+
+        if(self.neighbor_score):
+            for idx in range(len( inputs['points'] ) ):
+                points = inputs['points'][idx]
+
+                points_xyz = points[None,:,:3].detach().contiguous()
+                points_probs = points[None,:,self.filter_index].detach().contiguous()
+                MAX_BALL_NEIGHBORS = 32
+                ball_idxs = ball_query(0, 0.8, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
+
+                ball_idxs_first = ball_idxs[:,:,0][:,:,None]
+                nonzero_ball_idxs = ((ball_idxs-ball_idxs_first)!=0)
+                nonzero_count = nonzero_ball_idxs.sum(-1)
+
+                points_probs_tiled = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
+                neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
+                neighbor_probs = neighbor_probs*nonzero_ball_idxs
+                neighbor_probs = neighbor_probs.mean(-1)[0]
+           
+                selected_points = neighbor_probs>=self.neighbor_score
+                #points = torch.concatenate([points, neighbor_probs[...,None]], axis=-1)
+                points = points[selected_points]
+
+                #neighbor_probs = neighbor_probs[selected_points]
+                #choices = torch.argsort(neighbor_probs, descending=True)
+                #choices = torch.argsort(points[:,self.filter_index], descending=True)
+
+                inputs['points'][idx] = points
+                #inputs['points'][idx] = points[choices]
+                
+
+        if(self.in_channels):
+            for idx in range( len( inputs['points'] ) ):
+                inputs['points'][idx] = inputs['points'][idx][:,:self.in_channels]
 
         if 'points' in inputs:
             batch_inputs['points'] = inputs['points']

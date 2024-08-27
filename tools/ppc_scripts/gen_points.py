@@ -23,11 +23,11 @@ matplotlib.rcParams.update({'font.size': 20})
 
 
 SUNRGBDBASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-KITTIBASE = "/srv/home/bgoyal2/datasets/kitti/"
-#GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
-GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr/nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+KITTIBASE = "/srv/home/bgoyal2/datasets/kitti/training/"
+GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10/nr-576_nc-704_nt-8192_tres-73ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-OUTFOLDERNAME = 'points'
+OUTFOLDERNAME = 'points8192_r025_dist10'
 
 CORRECTNESS_THRESH = 25
 SAMPLED_POINTS=50000 # for sun rgbd
@@ -64,11 +64,6 @@ def parse_args():
         '--dataset',
         choices=['sunrgbd', 'kitti'],
         default='sunrgbd',
-        help='select a dataset')
-    parser.add_argument(
-        '--split',
-        choices=['training', 'testing'],
-        default='testing',
         help='select a dataset')
     parser.add_argument('--num_peaks', default=None, type=int,
                     help='num peaks for each pixel')
@@ -178,7 +173,7 @@ def main(args):
         basefolder = SUNRGBDBASE
         metadata = scipy.io.loadmat( os.path.join(basefolder,SUNRGBDMeta) )['SUNRGBDMeta'][0]
     else:
-        basefolder = os.path.join(KITTIBASE, args.split)
+        basefolder = KITTIBASE
 
     outfolder = os.path.join(basefolder, OUTFOLDERNAME)
     if(args.outfolder_prefix):
@@ -192,14 +187,14 @@ def main(args):
 
 
     # Only for visualization
-    #all_correct_cf, all_incorrect_cf = [], []
-    #all_correct_sp, all_incorrect_sp = [], []
-    #all_correct_neighcount, all_incorrect_neighcount = [], []
-    #all_correct_neighcf, all_incorrect_neighcf = [], []
-    #all_correct_neighsp, all_incorrect_neighsp = [], []
-    #all_correct_neighcfweighted, all_incorrect_neighcfweighted = [], []
-    #all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
-    #cfmax = 0
+    all_correct_cf, all_incorrect_cf = [], []
+    all_correct_sp, all_incorrect_sp = [], []
+    all_correct_neighcount, all_incorrect_neighcount = [], []
+    all_correct_neighcf, all_incorrect_neighcf = [], []
+    all_correct_neighsp, all_incorrect_neighsp = [], []
+    all_correct_neighcfweighted, all_incorrect_neighcfweighted = [], []
+    all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
+    cfmax = 0
 
     scenes = open(os.path.join(basefolder, 'all_data_idx.txt')).readlines()
     scenes = [x.strip() for x in scenes]
@@ -243,7 +238,9 @@ def main(args):
         else:
             az = data['az']
             el = data['el']
-    
+            # refleactance, naming it rgb
+            rgb = data['r']
+        
         # Subtract 1 from range bins to get the right bin index in python
         # as matlab indexes it from 1
         # for distance calculation, this is fine to use
@@ -285,20 +282,18 @@ def main(args):
         densitysum = densitysum[valid]
         correct = correct[valid]
         points3d = points3d.T
-        points3d = points3d[valid,:]
+        points3d = points3d[valid]
+        rgb = rgb[valid]
 
         if(args.dataset=='sunrgbd'):
-            rgb = rgb[valid,:]
-
             points3d, choices = random_sampling(points3d, SAMPLED_POINTS)
             density = density[choices]
             densitysum = densitysum[choices]
             correct = correct[choices]
             rgb = rgb[choices]
 
-            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis], rgb], axis=1)
-        else:
-            points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis]], axis=1)
+
+        points3d_rgb = np.concatenate([points3d, density[:,np.newaxis], density[:,np.newaxis]/densitysum[:,np.newaxis], rgb], axis=1)
 
         #points_xyz = torch.from_numpy(points3d_rgb[:,:3]).cuda()[None, :, :]
         #points_probs = torch.from_numpy(points3d_rgb[:,3]).cuda()[None, :]
@@ -314,10 +309,11 @@ def main(args):
         #all_correct_sp.extend(points_sp[0, correct].tolist())
         #all_incorrect_sp.extend(points_sp[0, ~correct].tolist())
 
-        #MAX_BALL_NEIGHBORS = 64
+        #MAX_BALL_NEIGHBORS = 32 # 64 for sunrgbd
         ## Ball query returns same index is neighbors are less than queried number of neighbors
         ## output looks like [3,56,74,2,44,3,3,3,3,3,3,3,3,3,3,3,3]
-        #ball_idxs = ball_query(0, 0.2, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
+        ## radius 0.2 for sunrgbd
+        #ball_idxs = ball_query(0, 0.8, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
         #
         ## first idx of the ball query is repeated if neighbors are fewer than MAX
         #ball_idxs_first = ball_idxs[:,:,0][:,:,None]
@@ -360,7 +356,7 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     ##UPPER = int((cfmax+0.5))
     ##bins = [x for x in range(UPPER)]
-    #IMAGE_DIR = 'figs_sbr_paper'
+    #IMAGE_DIR = 'figs_sbr_kitti'
 
     #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
@@ -384,7 +380,7 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
-    #bins = [x*0.001 for x in range(51)]
+    #bins = [x*0.001 for x in range(1001)]
     #plt.hist(all_correct_sp, bins, color='g', alpha=0.5, label='Ground Truth')
     #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5, label='Noise')
     #plt.xlabel('Probability')
@@ -402,10 +398,10 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/pointsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
 
     #plt.close()
-    #bins = [x*0.001 for x in range(51)]
+    #bins = [x*0.001 for x in range(21)]
     #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5, label='Ground Truth')
     #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5, label='Noise')
-    #plt.xlabel('NPD Score\n (SBR='+str(sbrfloat)+')')
+    #plt.xlabel('NPD Score\n (Avg. SBR='+str(sbrfloat)+')')
     #if(args.sbr=='5_50'):
     #    plt.ylabel('Number of Points')
     #if(args.sbr=='1_100'):
@@ -420,7 +416,7 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
 
     #plt.close()
-    #bins = [x*0.001 for x in range(101)]
+    #bins = [x*0.001 for x in range(51)]
     #plt.hist(all_correct_neighspweighted, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighspweighted, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/neighspweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)

@@ -242,7 +242,8 @@ class SingleStage3DDetector(Base3DDetector):
             #self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[1] else -1
 
 
-        batch_inputs_dict['points'] = torch.unbind(stack_points)
+        if(self.neighbor_score or self.updated_fps):
+            batch_inputs_dict['points'] = torch.unbind(stack_points)
         x = self.backbone(stack_points, stack_points_nonfps)
         #x = self.backbone(stack_points)
         if self.with_neck:
