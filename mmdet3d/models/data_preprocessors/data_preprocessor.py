@@ -97,6 +97,7 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
                  neighbor_score: float = 0,
                  filter_index: int = 4,
                  in_channels: int = None,
+                 post: bool = False,
                  pad_mask: bool = False,
                  mask_pad_value: int = 0,
                  pad_seg: bool = False,
@@ -126,6 +127,7 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
         self.max_voxels = max_voxels
         self.neighbor_score = neighbor_score
         self.filter_index = filter_index
+        self.post = post
         self.in_channels = in_channels
         if voxel:
             self.voxel_layer = VoxelizationByGridShape(**voxel_layer)
@@ -200,12 +202,13 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
                 #points = torch.concatenate([points, neighbor_probs[...,None]], axis=-1)
                 points = points[selected_points]
 
+                inputs['points'][idx] = points
+
                 #neighbor_probs = neighbor_probs[selected_points]
                 #choices = torch.argsort(neighbor_probs, descending=True)
-                #choices = torch.argsort(points[:,self.filter_index], descending=True)
-
-                inputs['points'][idx] = points
-                #inputs['points'][idx] = points[choices]
+                if(self.post):
+                    choices = torch.argsort(points[:,self.filter_index], descending=True)
+                    inputs['points'][idx] = points[choices]
                 
 
         if(self.in_channels):

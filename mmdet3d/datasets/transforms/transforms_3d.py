@@ -1036,6 +1036,7 @@ class PointSample(BaseTransform):
                  firstk_sampling: bool = False, # first n points
                  thresh_sampling: float = None, # n points above threshold
                  threshall_sampling: float = None, # all points above threshold
+                 thresh_index: int = 5, # index for threshold
                  #pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
@@ -1047,6 +1048,7 @@ class PointSample(BaseTransform):
         self.firstk_sampling = firstk_sampling
         self.thresh_sampling = thresh_sampling
         self.threshall_sampling = threshall_sampling
+        self.thresh_index = thresh_index
         #self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1139,11 +1141,11 @@ class PointSample(BaseTransform):
             #    points.tensor = torch.vstack((points.tensor, first_points))
             #choices = np.arange(num_samples)
         elif(self.thresh_sampling is not None):
-            probs = points.tensor[:,4]
+            probs = points.tensor[:,self.thresh_index]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
             choices = np.array(list(islice(cycle(probs_selected), num_samples)))
         elif(self.threshall_sampling is not None):
-            probs = points.tensor[:,4]
+            probs = points.tensor[:,self.thresh_index]
             probs_selected = np.where(probs>self.threshall_sampling)[0]
             choices = probs_selected[:num_samples]
         else:
