@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
-#SBATCH --exclude=euler[01-28]
+###SBATCH --exclude=euler[01-28]
 #SBATCH --mem=36G
 #SBATCH --time=1:0:0
 #SBATCH -o plotlogs/slurm.%j.%N.out # STDOUT
 #SBATCH -e plotlogs/slurm.%j.%N.err # STDERR
 #SBATCH --job-name=plotmmdt
 
-module load anaconda/mini/23.3.1
+module load conda/miniforge/23.1.0
 bootstrap_conda
 conda activate openmmlab
 
-cd work_dir_py/sbr/
+#cd work_dir_py/sbr/
+#cd work_dir_py/kitti/pointpillar/3class/
+cd work_dir_py/kitti/pvrcnn/3class/
 
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/first*  --eval --keys mAP_0.25 --out 1_50.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
-python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/*  --eval --keys mAP_0.25 --out 0.3_joint.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/*  --eval --keys mAP_0.25 --out 0.3_joint.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/*_*/*  --eval --keys mAP_0.25 --out 0.3_individual.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/all5/*  --eval --keys mAP_0.25 --out 1.0.pdf
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/*_*/*  --eval --keys mAP_0.25 --out 1.0_individual.pdf
@@ -28,3 +30,21 @@ python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/*  --eval
 
 #python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd1000fastfast/*/* 0.3/*/thresh20000_10  --eval --keys mAP_0.25 --out score_denoise.pdf
 
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/first50000_spupdated0003_radiusX/*  --eval --keys mAP_0.25 --out radius.pdf
+
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/first50000_spupdated0003_LX/*  --eval --keys mAP_0.25 --out L.pdf
+
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_nofeat baseline sbr8192/0.3/5_50/*  --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
+
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline baseline_b2 sbr8192/0.001/{1_50,5_50}/*  --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
+
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.2/baseline joint/0.3/{baseline,np0000*,thresh04,thresh05} --eval --keys "Overall_3D_AP11_moderate" --out test.pdf
+
+python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_b2_repeat joint/0.001/baseline joint/0.2/baseline joint/0.3/{baseline,npupdated00002,thresh04} --eval --keys "Overall_3D_AP40_moderate" --out test.pdf
+
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.001/{baseline,npupdated0001,npupdated0001_postp} --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
+
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline sbr8192/0.001/1_50/baseline joint/0.001/baseline   --keys "lr" --out test.pdf
+
+
+# 

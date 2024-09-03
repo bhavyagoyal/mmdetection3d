@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-75%40
+#SBATCH --array=1-1%2
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=2
@@ -30,10 +30,14 @@ END=$((($SLURM_ARRAY_TASK_ID)*100))
 #START=$((($SLURM_ARRAY_TASK_ID-1)*10+1200))
 #END=$((($SLURM_ARRAY_TASK_ID)*10+1200))
 
-python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_100 --start $START --end $END --threshold 0.001 --outfolder_prefix "0.001" --dataset "kitti"
+THRESHOLD=0.2
 
-python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_100 --start $START --end $END --threshold 0.001 --outfolder_prefix "0.001" --dataset "kitti"
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_100 --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "kitti"
 
-#python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_1 --start $START --end $END --threshold 0.001 --outfolder_prefix "0.001" --dataset "kitti"
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_100 --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "kitti"
+
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_50 --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "kitti"
+
+python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_50 --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "kitti"
 
 
