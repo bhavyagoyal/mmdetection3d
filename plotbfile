@@ -40,7 +40,7 @@ cd work_dir_py/kitti/pvrcnn/3class/
 
 #python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.2/baseline joint/0.3/{baseline,np0000*,thresh04,thresh05} --eval --keys "Overall_3D_AP11_moderate" --out test.pdf
 
-python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_b2_repeat joint/0.001/baseline joint/0.2/baseline joint/0.3/{baseline,npupdated00002,thresh04} --eval --keys "Overall_3D_AP40_moderate" --out test.pdf
+python ../../../../tools/analysis_tools/analyze_logs.py plot_curve  joint/0.3/npupdated* --eval --keys "Overall_3D_AP40_moderate" --out test.pdf
 
 #python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.001/{baseline,npupdated0001,npupdated0001_postp} --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
 

@@ -5,7 +5,7 @@
 #SBATCH --mem=24G
 #SBATCH --time=24:0:0
 ###SBATCH --nodelist=euler21
-####SBATCH --exclude=euler05,euler07
+#SBATCH --exclude=euler05,euler07
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=testmm
@@ -131,3 +131,23 @@ export NCCL_IB_DISABLE=1
 #
 #done
 
+
+### Thresholding
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/thresh04/
+CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+
+SBR=("clean" "5_50" "5_100" "1_50" "1_100")
+for i in "${!SBR[@]}"
+do
+DATAPATH=training/points8192_r025_dist10/0.3/argmax-filtering-sbr/${SBR[$i]}/
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT} --cfg-options \
+	work_dir=mapresults/${EXPERIMENT} \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.pipeline.0.load_dim=6 \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,4,3]" \
+	test_dataloader.dataset.pipeline.1.thresh_index=3 \
+	test_dataloader.dataset.pipeline.1.threshall_sampling=0.4 \
+	model.data_preprocessor.in_channels=4 \
+
+
+done

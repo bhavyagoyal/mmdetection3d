@@ -3,7 +3,7 @@
 ###SBATCH --partition=euler-next
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:2
-#SBATCH --mem=28G
+#SBATCH --mem=32G
 #SBATCH --time=96:0:0
 
 ###SBATCH --nodelist=euler21
@@ -17,7 +17,7 @@
 
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
-#SBATCH --job-name=mmdt3d
+#SBATCH --job-name=trainmm
 ###SBATCH --no-requeue
 
 ###export TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6 9.0+PTX" 
@@ -49,7 +49,7 @@
 module load conda/miniforge/23.1.0
 module load nvidia/cuda/11.8.0
 bootstrap_conda
-conda activate openmmlab2
+conda activate openmmlab3
 
 export CUDA_HOME=/opt/apps/cuda/x86_64/11.8.0/default
 export NCCL_P2P_DISABLE=1
@@ -68,7 +68,7 @@ EXPERIMENT=work_dir_py/kitti/pointpillar/3class/sbr8192/0.001/${SBR}/testing
 #npupdated0005
 #_spfeat_spupdated0003_postprob
 #EXPERIMENT=work_dir_py/kitti/pointpillar/3class/num_points/baseline_points01
-EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/npupdated00002_post
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/npupdated00002_repeat
 #EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/thresh04
 #EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/sbr8192/0.001/${SBR}/npupdated00005
 #EXPERIMENT=work_dir_py/kitti/pointpillar/3class/baseline_nofeat
@@ -112,6 +112,8 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d
 	train_dataloader.dataset.dataset.pipeline.2.db_sampler.info_path='data/kitti/kitti_dbinfos_train6.pkl' \
 	val_evaluator.ann_file='data/kitti/kitti_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
 	model.data_preprocessor.in_channels=4 \
+	model.data_preprocessor.neighbor_score=0.0002 \
+	model.data_preprocessor.filter_index=4 \
 	param_scheduler.0.T_max=4 \
 	param_scheduler.0.end=4 \
 	param_scheduler.1.T_max=6 \
@@ -123,9 +125,26 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d
 	param_scheduler.3.begin=4 \
 	param_scheduler.3.end=10 \
 	train_cfg.max_epochs=10 \
-	model.data_preprocessor.neighbor_score=0.0002 \
-	model.data_preprocessor.filter_index=4 \
-	model.data_preprocessor.post=True \
+	train_dataloader.batch_size=1 \
+
+
+
+
+
+#	param_scheduler.0.T_max=8 \
+#	param_scheduler.0.end=8 \
+#	param_scheduler.1.T_max=12 \
+#	param_scheduler.1.begin=8 \
+#	param_scheduler.1.end=20 \
+#	param_scheduler.2.T_max=8 \
+#	param_scheduler.2.end=8 \
+#	param_scheduler.3.T_max=12 \
+#	param_scheduler.3.begin=8 \
+#	param_scheduler.3.end=20 \
+#	train_cfg.max_epochs=20 \
+
+
+#	model.data_preprocessor.post=True \
 
 
 
@@ -135,7 +154,6 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d
 #	val_dataloader.dataset.pipeline.1.thresh_index=5 \
 #	val_dataloader.dataset.pipeline.1.threshall_sampling=0.4 \
 
-#	train_dataloader.batch_size=1 \
 
 
 
