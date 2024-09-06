@@ -10,7 +10,8 @@
 
 #SBATCH --job-name=scripts
 
-module load anaconda/mini/23.3.1
+#module load anaconda/mini/23.3.1
+module load conda/miniforge/23.1.0
 bootstrap_conda
 conda activate openmmlab
 

@@ -20,7 +20,7 @@ from mmdet3d.structures.ops import box_np_ops
 from mmdet3d.structures.points import BasePoints
 from .data_augment_utils import noise_per_object_v3_
 from itertools import islice, cycle
-
+#from pytorch3d.ops.ball_query import ball_query
 
 @TRANSFORMS.register_module()
 class RandomDropPointsColor(BaseTransform):
@@ -1033,9 +1033,10 @@ class PointSample(BaseTransform):
                  num_points: int,
                  #probability_sampling: bool = False,
                  #topk_sampling: bool = False,
-                 firstk_sampling: bool = False,
-                 thresh_sampling: float = None,
-                 threshall_sampling: float = None,
+                 firstk_sampling: bool = False, # first n points
+                 thresh_sampling: float = None, # n points above threshold
+                 threshall_sampling: float = None, # all points above threshold
+                 thresh_index: int = 5, # index for threshold
                  #pre_sort: int = None,
                  sample_range: Optional[float] = None,
                  replace: bool = False) -> None:
@@ -1047,6 +1048,7 @@ class PointSample(BaseTransform):
         self.firstk_sampling = firstk_sampling
         self.thresh_sampling = thresh_sampling
         self.threshall_sampling = threshall_sampling
+        self.thresh_index = thresh_index
         #self.pre_sort = pre_sort
 
     def _points_random_sampling(
@@ -1078,10 +1080,35 @@ class PointSample(BaseTransform):
                 - points (:obj:`BasePoints`): 3D Points.
                 - choices (np.ndarray, optional): The generated random samples.
         """
+
+        ##if(self.neighbor_score):
+        #if(True):
+        #    points_xyz = points.tensor[:,:3][None,...]
+        #    points_probs = points.tensor[:,4][None,...]
+        #    MAX_BALL_NEIGHBORS = 64
+        #    dist, ball_idxs, knns = ball_query(points_xyz, points_xyz, K=MAX_BALL_NEIGHBORS, radius=0.2)
+
+        #    #ball_idxs[ball_idxs==-1]=0
+        #    #nonzero_ball_idxs = ball_idxs>0
+
+        #    #points_probs_tiled = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
+        #    #neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
+        #    #neighbor_probs = neighbor_probs*nonzero_ball_idxs
+        #    #neighbor_probs = neighbor_probs.mean(-1)[0]
+        #   
+        #    #selected_points = neighbor_probs>=0.003
+        #    #points.tensor = torch.column_stack([points.tensor, neighbor_probs])
+        #    #points.tensor = points.tensor[selected_points]
+        #    #points.points_dim += 1
+        #    ##new_points = new_points[selected_points]
+        #    ##points = BasePoints(new_points,9)
+        #    #print(len(points))
+
         if isinstance(num_samples, float):
             assert num_samples < 1
             num_samples = int(
                 np.random.uniform(self.num_points, 1.) * points.shape[0])
+            #num_samples = int(self.num_points * points.shape[0])
 
         if not replace:
             replace = (points.shape[0] < num_samples)
@@ -1108,12 +1135,17 @@ class PointSample(BaseTransform):
         #    choices = np.argsort(-1*probs)[:num_samples]
         if(self.firstk_sampling):
             choices = np.arange(min(num_samples, len(points)))
+            #if(num_samples>len(points)):
+            #    first_points = torch.tile(points.tensor[0:1,:], (num_samples-len(points), 1))
+            #    #points = BasePoints(torch.vstack((points.tensor, first_points)), 9)
+            #    points.tensor = torch.vstack((points.tensor, first_points))
+            #choices = np.arange(num_samples)
         elif(self.thresh_sampling is not None):
-            probs = points.tensor[:,4]
+            probs = points.tensor[:,self.thresh_index]
             probs_selected = np.where(probs>self.thresh_sampling)[0]
             choices = np.array(list(islice(cycle(probs_selected), num_samples)))
         elif(self.threshall_sampling is not None):
-            probs = points.tensor[:,4]
+            probs = points.tensor[:,self.thresh_index]
             probs_selected = np.where(probs>self.threshall_sampling)[0]
             choices = probs_selected[:num_samples]
         else:

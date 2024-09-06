@@ -48,6 +48,8 @@ class SingleStage3DDetector(Base3DDetector):
                  post_sort: int = None,
                  filter_index: int = 5,
                  processed_points: bool = False,
+                 max_ball_neighbors: int = 64,
+                 max_ball_radius: float = 0.2,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
@@ -65,6 +67,8 @@ class SingleStage3DDetector(Base3DDetector):
         self.post_sort = post_sort
         self.filter_index = filter_index
         self.processed_points = processed_points
+        self.max_ball_neighbors = max_ball_neighbors
+        self.max_ball_radius = max_ball_radius
 
     def loss(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
@@ -176,8 +180,9 @@ class SingleStage3DDetector(Base3DDetector):
         if(self.neighbor_score):
             points_xyz = stack_points[:,:,:3].detach().contiguous()
             points_probs = stack_points[:,:,self.filter_index].detach().contiguous()
-            MAX_BALL_NEIGHBORS = self.backbone.SA_modules[0].groupers[0].sample_num
-            ball_idxs = ball_query(0, self.backbone.SA_modules[0].groupers[0].max_radius, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
+            #self.backbone.SA_modules[0].groupers[0].sample_num
+            #self.backbone.SA_modules[0].groupers[0].max_radius
+            ball_idxs = ball_query(0, self.max_ball_radius, self.max_ball_neighbors, points_xyz, points_xyz).long()
 
             # ball query returns repeats first neighbor if neighbors are fewer than requested
             # so, ignore the first neighbor in ball query output
@@ -185,7 +190,7 @@ class SingleStage3DDetector(Base3DDetector):
             nonzero_ball_idxs = ((ball_idxs-ball_idxs_first)!=0)
             nonzero_count = nonzero_ball_idxs.sum(-1)
 
-            points_probs_tiled = points_probs[:,:,None].tile(MAX_BALL_NEIGHBORS)
+            points_probs_tiled = points_probs[:,:,None].tile(self.max_ball_neighbors)
             neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
             neighbor_probs = neighbor_probs*nonzero_ball_idxs
             neighbor_probs = neighbor_probs.mean(-1)
@@ -244,7 +249,8 @@ class SingleStage3DDetector(Base3DDetector):
             #self.backbone.SA_modules[0].fps_sample_range_list[0]=new_fps if new_fps<stack_points.shape[1] else -1
 
 
-        batch_inputs_dict['points'] = torch.unbind(stack_points)
+        if(self.neighbor_score or self.updated_fps):
+            batch_inputs_dict['points'] = torch.unbind(stack_points)
         x = self.backbone(stack_points, stack_points_nonfps)
         #x = self.backbone(stack_points)
         if self.with_neck:
