@@ -59,6 +59,7 @@ for sp in splits:
 
     #np.savetxt(save_path, pcl_denoised.numpy(), fmt='%.8f')
     SBR = ['1_100', '1_50', '5_100', '5_50', 'clean']
+    SBR = ['1_10', '1_20', '1_50', '1_100', 'clean']
     final_list = []
 #    noise_max = [0.01, 0.1, 1.0]
     for idx, _ in enumerate(data_list):
@@ -82,8 +83,8 @@ for sp in splits:
     
     data['data_list'] = final_list
     SBRstr = '_'.join(SBR)
-    #with open('../../data/sunrgbd/sunrgbd_infos_' + sp + '_' + SBRstr + '_shortvis.pkl', 'wb') as f:
-    #with open('../../data/sunrgbd/sunrgbd_infos_' + sp + '_one.pkl', 'wb') as f:
+
+    #with open(os.path.join(BASE, 'kitti_infos_' + sp + '_shortvis.pkl'), 'wb') as f:
     with open(os.path.join(BASE, 'kitti_infos_' + sp + '_' + SBRstr +   '.pkl'), 'wb') as f:
         pickle.dump(data, f)
    

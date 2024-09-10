@@ -22,12 +22,13 @@ matplotlib.rcParams['ytick.color'] = 'black'
 matplotlib.rcParams.update({'font.size': 20})
 
 
-SUNRGBDBASE = "/srv/home/bgoyal2/Documents/mmdetection3d/data/sunrgbd/sunrgbd_trainval/"
-KITTIBASE = "/srv/home/bgoyal2/datasets/kitti/training/"
-GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
-GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10/nr-576_nc-704_nt-8192_tres-73ps_dark-0_psf-0'
+SUNRGBDBASE = "../../data/sunrgbd/sunrgbd_trainval/"
+KITTIBASE = "../../data/kitti/training/"
+SUNRGBD_GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
+KITTI_GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10/nr-576_nc-704_nt-8192_tres-73ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-OUTFOLDERNAME = 'points8192_r025_dist10'
+OUTFOLDERNAME = 'points8192_r025_dist10' # ../points_min2'
+#OUTFOLDERNAME = '../points_testing'
 
 CORRECTNESS_THRESH = 25
 SAMPLED_POINTS=50000 # for sun rgbd
@@ -57,7 +58,7 @@ def parse_args():
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_1', '5_50', '5_100', '1_50', '1_100'],
+        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '1_10', '1_20', '1_50', '1_100'],
         default='1_50',
         help='SBR')
     parser.add_argument(
@@ -153,7 +154,13 @@ def argmaxfilteringsbr(spad, gaussian_filter_pulse=False):
     else:
         spad = scipy.signal.convolve(spad, pulse, mode='same')
 
+    # Returns first index in tie break
     spadargmax, spadmax = spad.argmax(-1), spad.max(-1)
+
+    # Returns last index in tie break
+#    nt = spad.shape[-1]
+#    spadargmax, spadmax = nt - 1 - spad[:,:,::-1].argmax(-1), spad.max(-1)
+
     return spadargmax, spadmax, spad.sum(-1)
 
 
@@ -171,9 +178,11 @@ def main(args):
     if(args.dataset=='sunrgbd'):
         global metadata
         basefolder = SUNRGBDBASE
+        gen_folder = SUNRGBD_GEN_FOLDER
         metadata = scipy.io.loadmat( os.path.join(basefolder,SUNRGBDMeta) )['SUNRGBDMeta'][0]
     else:
         basefolder = KITTIBASE
+        gen_folder = KITTI_GEN_FOLDER
 
     outfolder = os.path.join(basefolder, OUTFOLDERNAME)
     if(args.outfolder_prefix):
@@ -184,7 +193,6 @@ def main(args):
     outfolder = os.path.join(outfolder, args.method, args.sbr)
     if not os.path.exists(outfolder):
         os.makedirs(outfolder)
-
 
     # Only for visualization
     all_correct_cf, all_incorrect_cf = [], []
@@ -205,15 +213,14 @@ def main(args):
     if(args.end is not None):
         end = args.end
 
-    #scenes_selected = random.sample(scenes, 10) # for vis 
+    #scenes_selected = random.sample(scenes[:99], 10) # for vis 
     scenes_selected = scenes[start:end]
     for scene in scenes_selected:
         print(scene)
         OUTFILE = os.path.join(outfolder, scene.zfill(6) +'.bin')
         if(os.path.exists(OUTFILE)):
             continue
-        #mat_file = BASE + GEN_FOLDER + '_' + args.sbr + '/spad_' + scene.zfill(6) + '_' + args.sbr +'.mat'
-        mat_file = os.path.join(basefolder, GEN_FOLDER, 'spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
+        mat_file = os.path.join(basefolder, gen_folder, 'spad_' + scene.zfill(6) + '_' + args.sbr +'.mat')
         data = scipy.io.loadmat(mat_file)
     
         nr, nc = data['intensity'].shape
@@ -309,10 +316,10 @@ def main(args):
         #all_correct_sp.extend(points_sp[0, correct].tolist())
         #all_incorrect_sp.extend(points_sp[0, ~correct].tolist())
 
-        #MAX_BALL_NEIGHBORS = 32 # 64 for sunrgbd
+        #MAX_BALL_NEIGHBORS = 32 #64 for sunrgbd , 32 for kitti 
         ## Ball query returns same index is neighbors are less than queried number of neighbors
         ## output looks like [3,56,74,2,44,3,3,3,3,3,3,3,3,3,3,3,3]
-        ## radius 0.2 for sunrgbd
+        ## radius 0.2 for sunrgbd, 0.8 for kitti
         #ball_idxs = ball_query(0, 0.8, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
         #
         ## first idx of the ball query is repeated if neighbors are fewer than MAX
@@ -356,7 +363,7 @@ def main(args):
     #bins = [x*0.01 for x in range(UPPER)]
     ##UPPER = int((cfmax+0.5))
     ##bins = [x for x in range(UPPER)]
-    #IMAGE_DIR = 'figs_sbr_kitti'
+    #IMAGE_DIR = 'figs_sbr_' + args.dataset + str( args.threshold )
 
     #plt.close()
     #plt.hist(all_correct_cf, bins, color='g', alpha=0.5)
@@ -367,11 +374,6 @@ def main(args):
     #plt.hist(all_correct_neighcf, bins, color='g', alpha=0.5)
     #plt.hist(all_incorrect_neighcf, bins, color='r', alpha=0.5)
     #plt.savefig(IMAGE_DIR + '/neighcf' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
-    #
-    #plt.close()
-    #plt.hist(all_correct_neighcfweighted, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_neighcfweighted, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/neighcfweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
     #bins = range(MAX_BALL_NEIGHBORS+2)
@@ -380,7 +382,7 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/neighcount' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
     #plt.close()
-    #bins = [x*0.001 for x in range(1001)]
+    #bins = [x*0.001 for x in range(51)]
     #plt.hist(all_correct_sp, bins, color='g', alpha=0.5, label='Ground Truth')
     #plt.hist(all_incorrect_sp, bins, color='r', alpha=0.5, label='Noise')
     #plt.xlabel('Probability')
@@ -398,7 +400,7 @@ def main(args):
     #plt.savefig(IMAGE_DIR + '/pointsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
 
     #plt.close()
-    #bins = [x*0.001 for x in range(21)]
+    #bins = [x*0.0001 for x in range(51)]
     #plt.hist(all_correct_neighsp, bins, color='g', alpha=0.5, label='Ground Truth')
     #plt.hist(all_incorrect_neighsp, bins, color='r', alpha=0.5, label='Noise')
     #plt.xlabel('NPD Score\n (Avg. SBR='+str(sbrfloat)+')')
@@ -414,12 +416,6 @@ def main(args):
     #ax.yaxis.set_major_formatter(formatter)
     #plt.tight_layout()
     #plt.savefig(IMAGE_DIR + '/neighsp' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.pdf')
-
-    #plt.close()
-    #bins = [x*0.001 for x in range(51)]
-    #plt.hist(all_correct_neighspweighted, bins, color='g', alpha=0.5)
-    #plt.hist(all_incorrect_neighspweighted, bins, color='r', alpha=0.5)
-    #plt.savefig(IMAGE_DIR + '/neighspweighted' + str(MAX_BALL_NEIGHBORS) + '_peaks_' + args.sbr + '.png', dpi=500)
 
 
 

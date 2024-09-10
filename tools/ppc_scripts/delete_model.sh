@@ -1,9 +1,9 @@
-for (( i = 1; i < 12; i++ ))
+for (( i = 1; i < 10; i++ ))
 do
-	find ../../work_dir_py -iname epoch_$i.pth | xargs rm
+	find ../../work_dir_py/kitti/pvrcnn/ -iname epoch_$i.pth | xargs rm
 done
 
-for (( i = 13; i < 36; i++ ))
+for (( i = 11; i < 50; i++ ))
 do
-	find ../../work_dir_py -iname epoch_$i.pth | xargs rm
+	find ../../work_dir_py/kitti/pvrcnn -iname epoch_$i.pth | xargs rm
 done
