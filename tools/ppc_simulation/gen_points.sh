@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-75%20
+#SBATCH --array=1-1%20
 
 #SBATCH --partition=research
 ###SBATCH --gres=gpu:1
@@ -18,7 +18,6 @@
 #SBATCH --job-name=mmdsim
 #SBATCH --no-requeue
 
-
 module load conda/miniforge/23.1.0
 bootstrap_conda
 conda activate openmmlab2
@@ -26,15 +25,10 @@ conda activate openmmlab2
 START=$((($SLURM_ARRAY_TASK_ID-1)*100))
 END=$((($SLURM_ARRAY_TASK_ID)*100))
 
-#python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
-#python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_50 --start 5040 --end 5050 --threshold 0.3 --outfolder_prefix "0.3" & 
-#python -u gen_points.py --method=argmax-filtering-sbr --sbr=1_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
-#python -u gen_points.py --method=argmax-filtering-sbr --sbr=5_100 --start 5040 --end 5050  --threshold 0.3 --outfolder_prefix "0.3" & 
-
-DATASET="kitti"
+DATASET="sunrgbd"
 THRESHOLD=0.3
-#SBR=("5_50" "5_100" "1_50" "1_100")
-SBR=("1_10" "1_20")
+SBR=("5_50" "5_100" "1_50" "1_100")
+#SBR=("1_10" "1_20" "1_50" "1_100")
 for i in "${!SBR[@]}"
 do
 python -u gen_points.py --method=argmax-filtering-sbr --sbr=${SBR[$i]} --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "${DATASET}" 
