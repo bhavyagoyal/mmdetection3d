@@ -26,9 +26,12 @@ SUNRGBDBASE = "../../data/sunrgbd/sunrgbd_trainval/"
 KITTIBASE = "../../data/kitti/training/"
 SUNRGBD_GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 KITTI_GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10/nr-576_nc-704_nt-8192_tres-73ps_dark-0_psf-0'
+KITTI_GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr2048_r025_dist10/nr-576_nc-704_nt-2048_tres-293ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-OUTFOLDERNAME = 'points8192_r025_dist10' # ../points_min2'
-OUTFOLDERNAME = '../points_testing'
+OUTFOLDERNAME = 'points8192_r025_dist10'
+OUTFOLDERNAME = 'points2048_r025_dist10'
+#OUTFOLDERNAME = 'points_min2'
+#OUTFOLDERNAME = '../points_testing'
 
 SAMPLED_POINTS=50000 # for sun rgbd
 
@@ -60,7 +63,7 @@ def parse_args():
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '1_10', '1_20', '1_50', '1_100'],
+        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '5_1000', '1_10', '1_20', '1_50', '1_100'],
         default='1_50',
         help='SBR')
     parser.add_argument(

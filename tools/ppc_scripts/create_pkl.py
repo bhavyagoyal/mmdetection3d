@@ -60,6 +60,7 @@ for sp in splits:
     #np.savetxt(save_path, pcl_denoised.numpy(), fmt='%.8f')
     SBR = ['1_100', '1_50', '5_100', '5_50', 'clean']
     SBR = ['1_10', '1_20', '1_50', '1_100', 'clean']
+    SBR = ['5_1000', '5_500', '5_250', '5_100', 'clean']
     final_list = []
 #    noise_max = [0.01, 0.1, 1.0]
     for idx, _ in enumerate(data_list):

@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --mem=30G
 #SBATCH --time=48:0:0
-#SBATCH --exclude=euler07,euler14,euler05
+#SBATCH --exclude=euler07,euler05,euler29,euler30
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
 #SBATCH --job-name=trainmm

@@ -2,18 +2,18 @@
 #SBATCH --partition=research
 ###SBATCH --partition=euler-next
 #SBATCH --cpus-per-task=6
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:rtx4000ada:2
 #SBATCH --mem=32G
-#SBATCH --time=96:0:0
+#SBATCH --time=72:0:0
 
 ###SBATCH --nodelist=euler21
-###SBATCH --exclude=euler07,euler14,euler05,euler06,euler13
+#SBATCH --exclude=euler07,euler05
 ### errors
 ### euler07,euler05
 ### not public
 ###euler06,euler13
 ### excludes 1080 and 2070s
-#SBATCH --exclude=euler04,euler05,euler06,euler07,euler08,euler09,euler11,euler12,euler14
+###SBATCH --exclude=euler04,euler05,euler06,euler07,euler08,euler09,euler11,euler12,euler14
 
 #SBATCH -o slurm.%j.%N.out # STDOUT
 #SBATCH -e slurm.%j.%N.err # STDERR
@@ -49,7 +49,7 @@
 module load conda/miniforge/23.1.0
 module load nvidia/cuda/11.8.0
 bootstrap_conda
-conda activate openmmlab3
+conda activate openmmlab2
 
 export CUDA_HOME=/opt/apps/cuda/x86_64/11.8.0/default
 export NCCL_P2P_DISABLE=1
@@ -57,25 +57,24 @@ export NCCL_IB_DISABLE=1
 
 # Print GPU usage
 #nvidia-smi
+>&2 nvidia-smi --query-gpu=gpu_name,utilization.gpu,memory.free,memory.used --format=csv -l 1000 &
 
 GPUS=2
 PORTUSED=$(( $RANDOM + 10000 ))
-SBR="1_50"
+#SBR="1_50"
+SBR=$1
 
 #EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdated0004_post_newfps001_repeat
-#EXPERIMENT=work_dir_py/sbr/0.3/joint/testing
 EXPERIMENT=work_dir_py/kitti/pointpillar/3class/sbr8192/0.001/${SBR}/testing
-#npupdated0005
-#_spfeat_spupdated0003_postprob
 #EXPERIMENT=work_dir_py/kitti/pointpillar/3class/num_points/baseline_points01
-EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/npupdated00002_repeat
-#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/thresh04
-#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/sbr8192/0.001/${SBR}/npupdated00005
-#EXPERIMENT=work_dir_py/kitti/pointpillar/3class/baseline_nofeat
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/npupdated00005
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/${SBR}_2048/0.3/baseline
 #EXPERIMENT=work_dir_py/kittifusion/mvxnet/baseline_b4
+
 #DATAPATH=points_min2/0.3/argmax-filtering-sbr/
-#DATAPATH=training/points8192_r025_dist10/0001/argmax-filtering-sbr/${SBR}/
-DATAPATH=training/points8192_r025_dist10/0.3/argmax-filtering-sbr/
+#DATAPATH=training/points8192_r025_dist10/0.3/argmax-filtering-sbr/${SBR}
+DATAPATH=training/points2048_r025_dist10/0.3/argmax-filtering-sbr/
+
 #PORT=${PORTUSED} ./tools/dist_train.sh configs/mvxnet/mvxnet_fpn_dv_second_secfpn_8xb2-80e_kitti-3d-3class.py ${GPUS} --auto-scale-lr --resume  --cfg-options \
 #PORT=${PORTUSED} ./tools/dist_train.sh configs/pointpillars/pointpillars_hv_secfpn_8xb6-160e_kitti-3d-3class.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 #	work_dir=${EXPERIMENT} \
@@ -98,22 +97,20 @@ DATAPATH=training/points8192_r025_dist10/0.3/argmax-filtering-sbr/
 
 PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 	work_dir=${EXPERIMENT} \
-	default_hooks.checkpoint.interval=1 \
 	train_dataloader.dataset.dataset.pipeline.0.use_dim=[0,1,2,5,4,3] \
 	val_dataloader.dataset.pipeline.0.use_dim=[0,1,2,5,4,3] \
 	train_dataloader.dataset.dataset.pipeline.0.load_dim=6 \
 	val_dataloader.dataset.pipeline.0.load_dim=6 \
 	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
 	val_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-	train_dataloader.dataset.dataset.ann_file='kitti_infos_train_1_100_1_50_5_100_5_50_clean.pkl' \
-	val_dataloader.dataset.ann_file='kitti_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
 	train_dataloader.dataset.dataset.pipeline.2.db_sampler.points_loader.use_dim=[0,1,2,5,4,3] \
 	train_dataloader.dataset.dataset.pipeline.2.db_sampler.points_loader.load_dim=6 \
 	train_dataloader.dataset.dataset.pipeline.2.db_sampler.info_path='data/kitti/kitti_dbinfos_train6.pkl' \
-	val_evaluator.ann_file='data/kitti/kitti_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
 	model.data_preprocessor.in_channels=4 \
-	model.data_preprocessor.neighbor_score=0.0002 \
-	model.data_preprocessor.filter_index=4 \
+	default_hooks.checkpoint.interval=1 \
+	train_dataloader.dataset.dataset.ann_file='kitti_infos_train_5_1000_5_500_5_250_5_100_clean.pkl' \
+	val_dataloader.dataset.ann_file='kitti_infos_val_5_1000_5_500_5_250_5_100_clean.pkl' \
+	val_evaluator.ann_file='data/kitti/kitti_infos_val_5_1000_5_500_5_250_5_100_clean.pkl' \
 	param_scheduler.0.T_max=4 \
 	param_scheduler.0.end=4 \
 	param_scheduler.1.T_max=6 \
@@ -125,10 +122,32 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d
 	param_scheduler.3.begin=4 \
 	param_scheduler.3.end=10 \
 	train_cfg.max_epochs=10 \
-	train_dataloader.batch_size=1 \
+	model.data_preprocessor.neighbor_score=0.0005 \
+	model.data_preprocessor.filter_index=4 \
 
 
 
+#	model.data_preprocessor.post=True \
+#	train_dataloader.batch_size=1 \
+#	train_dataloader.dataset.dataset.ann_file='kitti_infos_train_1_100_1_50_5_100_5_50_clean.pkl' \
+#	val_dataloader.dataset.ann_file='kitti_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
+#	val_evaluator.ann_file='data/kitti/kitti_infos_val_1_100_1_50_5_100_5_50_clean.pkl' \
+#	train_dataloader.dataset.dataset.ann_file='kitti_infos_train_1_10_1_20_1_50_1_100_clean.pkl' \
+#	val_dataloader.dataset.ann_file='kitti_infos_val_1_10_1_20_1_50_1_100_clean.pkl' \
+#	val_evaluator.ann_file='data/kitti/kitti_infos_val_1_10_1_20_1_50_1_100_clean.pkl' \
+#	train_dataloader.dataset.dataset.ann_file='kitti_infos_train_5_500_5_250_5_100_5_50_clean.pkl' \
+#	val_dataloader.dataset.ann_file='kitti_infos_val_5_500_5_250_5_100_5_50_clean.pkl' \
+#	val_evaluator.ann_file='data/kitti/kitti_infos_val_5_500_5_250_5_100_5_50_clean.pkl' \
+
+
+
+
+
+
+#	train_dataloader.dataset.dataset.pipeline.3.thresh_index=5 \
+#	train_dataloader.dataset.dataset.pipeline.3.threshall_sampling=0.4 \
+#	val_dataloader.dataset.pipeline.1.thresh_index=5 \
+#	val_dataloader.dataset.pipeline.1.threshall_sampling=0.4 \
 
 
 #	param_scheduler.0.T_max=8 \
@@ -144,15 +163,8 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d
 #	train_cfg.max_epochs=20 \
 
 
-#	model.data_preprocessor.post=True \
 
 
-
-
-#	train_dataloader.dataset.dataset.pipeline.3.thresh_index=5 \
-#	train_dataloader.dataset.dataset.pipeline.3.threshall_sampling=0.4 \
-#	val_dataloader.dataset.pipeline.1.thresh_index=5 \
-#	val_dataloader.dataset.pipeline.1.threshall_sampling=0.4 \
 
 
 

@@ -8,10 +8,10 @@ function SimulatePPCMeasurements(startidx, endidx, dataset)
 	elseif strcmp(dataset, "kitti")
 		base_dirpath = '../../data/kitti/training/';
 		depthdir = fullfile(base_dirpath, 'velodyne_reduced/');
-		out_base_dirpath = fullfile(base_dirpath, 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10');
-		num_bins = 8192; 
+		out_base_dirpath = fullfile(base_dirpath, 'processed_velodyne_reduced_lowfluxlowsbr2048_r025_dist10');
+		num_bins = 2048; 
 	end
-	out_base_dirpath = fullfile(base_dirpath, 'processed_testing');
+	%out_base_dirpath = fullfile(base_dirpath, 'processed_testing');
 
 
 	% Speed of light
@@ -36,7 +36,7 @@ function SimulatePPCMeasurements(startidx, endidx, dataset)
 		simulation_params = [ 1, 100; 1, 50; 5, 100; 5, 50;];
 	elseif strcmp(dataset, "kitti")
 		startdataidx=0; enddataidx=7480;
-		simulation_params = [ 1, 10; 1, 20; 1, 50; 1, 100;];
+		simulation_params = [ 5, 100; 5 250; 5 500; 5 1000];
 	end
 
 	% Get all scene names. they go from 000001 to 010335

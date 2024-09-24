@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-1%10
+#SBATCH --array=1-75%10
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=50G
+#SBATCH --mem=32G
 #SBATCH --time=24:0:0
 
 #SBATCH --exclude=euler[01-23],euler[28-30]
@@ -25,6 +25,6 @@ module load matlab/r2021b
 START=$((($SLURM_ARRAY_TASK_ID-1)*100))
 END=$((($SLURM_ARRAY_TASK_ID)*100))
 
-matlab -nodisplay -nosplash -nodesktop -r 'SimulatePPCMeasurements('$((START+1))','$END',"sunrgbd");quit;'
+matlab -nodisplay -nosplash -nodesktop -r 'SimulatePPCMeasurements('$((START+1))','$END',"kitti");quit;'
 
 

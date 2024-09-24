@@ -16,35 +16,14 @@ conda activate openmmlab
 #cd work_dir_py/kitti/pointpillar/3class/
 cd work_dir_py/kitti/pvrcnn/3class/
 
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1_50/first*  --eval --keys mAP_0.25 --out 1_50.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/all5/*  --eval --keys mAP_0.25 --out 0.3.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/*  --eval --keys mAP_0.25 --out 0.3_joint.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/*_*/*  --eval --keys mAP_0.25 --out 0.3_individual.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/all5/*  --eval --keys mAP_0.25 --out 1.0.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/*_*/*  --eval --keys mAP_0.25 --out 1.0_individual.pdf
+#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/joint/*  --eval --keys mAP_0.25 --out 0.048.pdf
 
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/*_*/first50000_spupdated0001* 0.048/*_*/thresh*  --eval --keys mAP_0.25 --out 0.048_individual.pdf
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.048/all5/*  --eval --keys mAP_0.25 --out 0.048.pdf
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint_1flux/*/baseline*  --eval --keys "Overall_3D_AP11_moderate" --out 1flux_baseline.pdf
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint_1flux/*/npupdated*  --eval --keys "Overall_3D_AP11_moderate" --out 1flux_ppc.pdf
+python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint_5flux2048/*/*  --eval --keys "Overall_3D_AP11_moderate" --out 5flux2048.pdf
+python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint_5fluxunder2048/*/*  --eval --keys "Overall_3D_AP11_moderate" --out 5fluxunder2048.pdf
+python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk *_*_2048/0.3/baseline  --eval  --keys "Overall_3D_AP11_moderate" --out baseline_single2048.pdf
 
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve ../gaussian_noise/*/first20000 ../gaussian_noise/score-denoised/*/first50000   --eval --keys mAP_0.25 --out gaussian_noise.pdf
-
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 1.0/score-denoised_sunrgbd1000fastfast/*/* 0.3/*/thresh20000_10  --eval --keys mAP_0.25 --out score_denoise.pdf
-
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/first50000_spupdated0003_radiusX/*  --eval --keys mAP_0.25 --out radius.pdf
-
-#python ../../tools/analysis_tools/analyze_logs.py plot_curve 0.3/joint/first50000_spupdated0003_LX/*  --eval --keys mAP_0.25 --out L.pdf
-
-#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_nofeat baseline sbr8192/0.3/5_50/*  --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
-
-#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline baseline_b2 sbr8192/0.001/{1_50,5_50}/*  --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
-
-#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.2/baseline joint/0.3/{baseline,np0000*,thresh04,thresh05} --eval --keys "Overall_3D_AP11_moderate" --out test.pdf
-
-python ../../../../tools/analysis_tools/analyze_logs.py plot_curve  joint/0.3/npupdated* --eval --keys "Overall_3D_AP40_moderate" --out test.pdf
+#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve  baseline_bk rupdated* --eval --keys "Overall_3D_AP40_moderate" --out test.pdf
 
 #python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline_bk joint/0.001/{baseline,npupdated0001,npupdated0001_postp} --eval --eval-interval 2 --keys "Overall_3D_AP11_moderate" --out test.pdf
-
-#python ../../../../tools/analysis_tools/analyze_logs.py plot_curve baseline sbr8192/0.001/1_50/baseline joint/0.001/baseline   --keys "lr" --out test.pdf
-
-
-# 
