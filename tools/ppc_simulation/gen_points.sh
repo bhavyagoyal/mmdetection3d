@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --array=1-75%10
+#SBATCH --array=1-75%1
 
 #SBATCH --partition=research
 ###SBATCH --gres=gpu:1
@@ -9,6 +9,7 @@
 #SBATCH --time=24:0:0
 
 ###SBATCH --exclude=euler[01-23],euler[28-30]
+#SBATCH --exclude=euler[01-23]
 
 ###SBATCH -o slurm.%j.%N.out # STDOUT
 ###SBATCH -e slurm.%j.%N.err # STDERR
@@ -27,9 +28,7 @@ END=$((($SLURM_ARRAY_TASK_ID)*100))
 
 DATASET="kitti"
 THRESHOLD=0.3
-SBR=("5_100" "5_100" "1_50" "1_100")
-SBR=("5_1000")
-#SBR=("1_10" "1_20" "1_50" "1_100")
+SBR=("5_100" "5_250" "5_500" "5_1000")
 for i in "${!SBR[@]}"
 do
 python -u gen_points.py --method=argmax-filtering-sbr --sbr=${SBR[$i]} --start $START --end $END --threshold $THRESHOLD --outfolder_prefix "${THRESHOLD}" --dataset "${DATASET}" 

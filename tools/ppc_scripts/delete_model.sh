@@ -3,7 +3,7 @@ do
 	find ../../work_dir_py/kitti/pvrcnn/ -iname epoch_$i.pth | xargs rm
 done
 
-for (( i = 11; i < 50; i++ ))
+for (( i = 11; i < 40; i++ ))
 do
 	find ../../work_dir_py/kitti/pvrcnn -iname epoch_$i.pth | xargs rm
 done

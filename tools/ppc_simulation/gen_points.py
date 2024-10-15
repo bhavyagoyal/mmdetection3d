@@ -63,7 +63,7 @@ def parse_args():
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '5_1000', '1_10', '1_20', '1_50', '1_100'],
+        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '5_1000', '5_2000', '1_10', '1_20', '1_50', '1_100'],
         default='1_50',
         help='SBR')
     parser.add_argument(

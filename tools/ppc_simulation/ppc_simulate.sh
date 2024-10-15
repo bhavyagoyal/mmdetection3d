@@ -4,7 +4,7 @@
 
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+#SBATCH --mem=50G
 #SBATCH --time=24:0:0
 
 #SBATCH --exclude=euler[01-23],euler[28-30]
