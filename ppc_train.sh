@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --partition=research
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:gtx1080:2
 #SBATCH --mem=30G
 #SBATCH --time=48:0:0
 #SBATCH --exclude=euler07,euler05,euler29,euler30
@@ -100,7 +100,7 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.
 
 
 #### Matched Filtering + Thresholding
-#EXPERIMENT=work_dir_py/sbr/0.3/joint/thresh50000_11
+#EXPERIMENT=work_dir_py/sbr/0.3/joint/thresh/thresh50000_11
 #DATAPATH=points_min2/0.3/argmax-filtering-sbr/
 #PORT=${PORTUSED} ./tools/dist_train.sh configs/votenet/votenet_8xb16_sunrgbd-3d.py ${GPUS} --auto-scale-lr --resume --cfg-options \
 #	train_dataloader.dataset.dataset.data_prefix.pts=${DATAPATH} \
