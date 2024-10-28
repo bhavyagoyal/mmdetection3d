@@ -95,8 +95,8 @@ def trigger_visualization_hook(cfg, args):
             'if you want to use visualization hook'
         visualization_hook['vis_task'] = args.task
         visualization_hook['score_thr'] = args.score_thr
-        #visualization_hook['draw_gt'] = True
-        #visualization_hook['draw_pred'] = False
+        #visualization_hook['draw_gt'] = True # for vis
+        #visualization_hook['draw_pred'] = False # for vis
         visualization_hook['show_pcd_rgb'] = True
         if(args.no_color):
             visualization_hook['show_pcd_rgb'] = False

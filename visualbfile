@@ -9,22 +9,25 @@ CHECKPOINT=${EXPERIMENT}/epoch_12.pth
 SBR=5_50
 DATAPATH=points_min2/0.3/argmax-filtering-sbr/${SBR}/
 
+SBR=5_100
+DATAPATH=training/points8192_r025_dist10/0.3/argmax-filtering-sbr/${SBR}/
+
 # color idxs is -4 for prob and -3 -2 -1 for rgb
 # if using filtering, then -5 and -4 -3 -2 for rgb
 
-CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 --color-idxs -4 -3 -2 \
-	--work-dir work_dir_vis/${SBR} \
-	--cfg-options \
-	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
-	test_dataloader.dataset.pipeline.0.load_dim=8 \
-	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4,5,6,7]" \
-	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
-	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
-	model.processed_points=True \
-	model.filter_index=4 \
-	model.neighbor_score=0.003 \
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.5 --score-thr 0.5 --color-idxs -4 -3 -2 \
+#	--work-dir work_dir_vis/${SBR} \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='sunrgbd_infos_val_mediumvis.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4,5,6,7]" \
+#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=50000 \
+#	model.processed_points=True \
+#	model.filter_index=4 \
+#	model.neighbor_score=0.003 \
 
 
 	#--norm-color \
@@ -97,6 +100,93 @@ CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sun
 
 
 
+
+
+####################### KITTI ########################
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/npupdated00002/
+#CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+#
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr 0.6 --color-idxs -1 -1 -1 \
+#	--norm-color \
+#	--work-dir work_dir_vis/ppc_${SBR} \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.0.load_dim=6 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,4]" \
+#	test_dataloader.dataset.ann_file='kitti_infos_val_mediumvis.pkl' \
+#	test_evaluator.ann_file='data/kitti/kitti_infos_val_mediumvis.pkl' \
+#	model.data_preprocessor.in_channels=4 \
+#	model.data_preprocessor.post=True \
+#	model.data_preprocessor.neighbor_score=0.0002 \
+#	model.data_preprocessor.filter_index=4 \
+#	model.processed_points=True \
+#
+#
+#	#model.updated_fps=0.01 \
+#	#model.post_sort=4 \
+#
+#
+#
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/baseline/
+#CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+#
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr 0.6 \
+#	--no-color \
+#	--work-dir work_dir_vis/points_${SBR} \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.0.load_dim=6 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5]" \
+#	test_dataloader.dataset.ann_file='kitti_infos_val_mediumvis.pkl' \
+#	test_evaluator.ann_file='data/kitti/kitti_infos_val_mediumvis.pkl' \
+#	model.data_preprocessor.in_channels=4 \
+#	model.processed_points=True \
+#
+
+
+## requres chanigng config file for sampling with thresholding
+#
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint/0.3/baseline/
+#CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr 0.6 \
+#	--no-color \
+#	--work-dir work_dir_vis/thresh075_${SBR} \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.0.load_dim=6 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,3]" \
+#	test_dataloader.dataset.ann_file='kitti_infos_val_mediumvis.pkl' \
+#	test_evaluator.ann_file='data/kitti/kitti_infos_val_mediumvis.pkl' \
+#	model.data_preprocessor.in_channels=4 \
+#	model.processed_points=True \
+#	test_dataloader.dataset.pipeline.1.thresh_index=4 \
+#	test_dataloader.dataset.pipeline.1.threshall_sampling=0.75 \
+
+
+
+
+
+## replace this for gt boxes as well
+#CHECKPOINT=checkpoints/pv_rcnn_8xb2-80e_kitti-3d-3class_20221117_234428-b384d22f.pth
+#DATAPATH=training/velodyne_reduced6/
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr 0.6 \
+#	--work-dir work_dir_vis/gt \
+#	--no-color \
+#	--cfg-options \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.ann_file='kitti_infos_val_mediumvis.pkl' \
+#	test_evaluator.ann_file='data/kitti/kitti_infos_val_mediumvis.pkl' \
+#	test_dataloader.dataset.pipeline.0.load_dim=6 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5]" \
+#	model.data_preprocessor.in_channels=4 \
+#	model.processed_points=True \
+#
+#
+##	--load-pts-again \
 
 
 

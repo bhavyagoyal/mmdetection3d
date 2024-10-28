@@ -328,7 +328,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             line_set = geometry.LineSet.create_from_oriented_bounding_box(
                 box3d)
             line_set.paint_uniform_color(np.array(bbox_color[i]) / 255.)
-            line_mesh = LineMesh(np.asarray(line_set.points), np.asarray(line_set.lines), colors=np.array(bbox_color[i]) / 255., radius=0.02)
+            line_mesh = LineMesh(np.asarray(line_set.points), np.asarray(line_set.lines), colors=np.array(bbox_color[i]) / 255., radius=0.1) # 0.02 for sun
             line_mesh_geoms = line_mesh.cylinder_segments
 
 
@@ -879,8 +879,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             #with open(save_path[:-4]+'-camera.json', 'w') as f:
             #    f.write(self.o3d_vis.get_view_status())
             if(save_path):
-                camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
+                #camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
                 #camfile = 'flim/' + '000001-camera.json'
+                camfile = 'cam_selected/' + 'kitti-000001-camera.json'
                 if(os.path.exists(camfile)): 
                     with open(camfile, 'rb') as f:
                         self.o3d_vis.set_view_status(f.read().strip())
@@ -1030,6 +1031,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         classes = self.dataset_meta.get('classes', None)
         # For object detection datasets, no palette is saved
         palette = self.dataset_meta.get('palette', None)
+        palette = [(106, 0, 228), (11, 119, 32), (165, 42, 42)]
         ignore_index = self.dataset_meta.get('ignore_index', None)
         if vis_task == 'lidar_seg' and ignore_index is not None and 'pts_semantic_mask' in data_sample.gt_pts_seg:  # noqa: E501
             keep_index = data_sample.gt_pts_seg.pts_semantic_mask != ignore_index  # noqa: E501

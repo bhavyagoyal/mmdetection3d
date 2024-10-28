@@ -46,6 +46,7 @@ class PointVoxelRCNN(TwoStage3DDetector):
                  train_cfg: Optional[dict] = None,
                  test_cfg: Optional[dict] = None,
                  init_cfg: Optional[dict] = None,
+                 processed_points: bool = False,
                  data_preprocessor: Optional[dict] = None) -> None:
         super().__init__(
             backbone=backbone,
@@ -59,6 +60,7 @@ class PointVoxelRCNN(TwoStage3DDetector):
         self.voxel_encoder = MODELS.build(voxel_encoder)
         self.middle_encoder = MODELS.build(middle_encoder)
         self.points_encoder = MODELS.build(points_encoder)
+        self.processed_points = processed_points
 
     def predict(self, batch_inputs_dict: dict, batch_data_samples: SampleList,
                 **kwargs) -> SampleList:
@@ -109,7 +111,7 @@ class PointVoxelRCNN(TwoStage3DDetector):
 
         # connvert to Det3DDataSample
         results_list = self.add_pred_to_datasample(batch_data_samples,
-                                                   results_list_3d)
+                                                   results_list_3d, processed_points=batch_inputs_dict['points'])
 
         return results_list
 

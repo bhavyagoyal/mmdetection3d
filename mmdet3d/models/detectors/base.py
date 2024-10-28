@@ -151,5 +151,5 @@ class Base3DDetector(BaseDetector):
             data_sample.pred_instances_3d = data_instances_3d[i]
             data_sample.pred_instances = data_instances_2d[i]
             if(processed_points):
-                data_sample.processed_points = processed_points
+                data_sample.processed_points = processed_points[i]
         return data_samples

@@ -225,10 +225,10 @@ class Det3DVisualizationHook(Hook):
                 if(self.load_pts_again):
                     pts_bytes = get(lidar_path, backend_args=self.backend_args)
                     points = np.frombuffer(pts_bytes, dtype=np.float32)
-                    points = points.reshape(-1, 8)#num_pts_feats)
+                    points = points.reshape(-1, num_pts_feats)
                     data_input['points'] = points
                 else:
-                    data_input['points'] = data_sample.processed_points[0]
+                    data_input['points'] = data_sample.processed_points
                 data_input['points'] = data_input['points'][:,[0,1,2]+self.color_idxs]
                 #data_input['points'] = data_batch['inputs']['points'][0][:10000,:]
                 if self.test_out_dir is not None:
