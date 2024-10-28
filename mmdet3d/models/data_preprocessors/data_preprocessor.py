@@ -95,6 +95,8 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
                  pad_size_divisor: int = 1,
                  pad_value: Union[float, int] = 0,
                  neighbor_score: float = 0,
+                 ad_neighbor_score: bool = False,
+                 adavg_neighbor_score: bool = False,
                  filter_index: int = 4,
                  in_channels: int = None,
                  post: bool = False,
@@ -126,6 +128,8 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
         self.batch_first = batch_first
         self.max_voxels = max_voxels
         self.neighbor_score = neighbor_score
+        self.ad_neighbor_score = ad_neighbor_score
+        self.adavg_neighbor_score = adavg_neighbor_score
         self.filter_index = filter_index
         self.post = post
         self.in_channels = in_channels
@@ -186,6 +190,8 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
 
                 points_xyz = points[None,:,:3].detach().contiguous()
                 points_probs = points[None,:,self.filter_index].detach().contiguous()
+                min_prob = points_probs.min()
+                avg_prob = points_probs.mean()
                 MAX_BALL_NEIGHBORS = 32
                 ball_idxs = ball_query(0, 0.8, MAX_BALL_NEIGHBORS, points_xyz, points_xyz).long()
 
@@ -197,8 +203,13 @@ class Det3DDataPreprocessor(DetDataPreprocessor):
                 neighbor_probs = torch.gather(points_probs_tiled, 1, ball_idxs) 
                 neighbor_probs = neighbor_probs*nonzero_ball_idxs
                 neighbor_probs = neighbor_probs.mean(-1)[0]
-           
-                selected_points = neighbor_probs>=self.neighbor_score
+    
+                prob_thresh = self.neighbor_score
+                if(self.ad_neighbor_score):
+                    prob_thresh = min_prob*self.neighbor_score       
+                if(self.adavg_neighbor_score):
+                    prob_thresh = avg_prob*self.neighbor_score       
+                selected_points = neighbor_probs>=prob_thresh
                 #points = torch.concatenate([points, neighbor_probs[...,None]], axis=-1)
                 points = points[selected_points]
 

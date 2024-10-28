@@ -26,13 +26,17 @@ SUNRGBDBASE = "../../data/sunrgbd/sunrgbd_trainval/"
 KITTIBASE = "../../data/kitti/training/"
 SUNRGBD_GEN_FOLDER = 'processed_lowfluxlowsbr_min2/SimSPADDataset_nr-576_nc-704_nt-1024_tres-586ps_dark-0_psf-0'
 KITTI_GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr8192_r025_dist10/nr-576_nc-704_nt-8192_tres-73ps_dark-0_psf-0'
+KITTI_GEN_FOLDER = 'processed_velodyne_reduced_lowfluxlowsbr2048_r025_dist10/nr-576_nc-704_nt-2048_tres-293ps_dark-0_psf-0'
 SUNRGBDMeta = '../OFFICIAL_SUNRGBD/SUNRGBDMeta3DBB_v2.mat'
-OUTFOLDERNAME = 'points8192_r025_dist10' # ../points_min2'
+OUTFOLDERNAME = 'points8192_r025_dist10'
+OUTFOLDERNAME = 'points2048_r025_dist10'
+#OUTFOLDERNAME = 'points_min2'
 #OUTFOLDERNAME = '../points_testing'
 
-CORRECTNESS_THRESH = 25
 SAMPLED_POINTS=50000 # for sun rgbd
 
+
+CORRECTNESS_THRESH = 25 # only for visualization of gt vs noise
 
 metadata = None
 
@@ -45,6 +49,7 @@ def random_sampling(points, num_points, p=None):
     choices = np.random.choice(points.shape[0], num_points, replace=replace, p=p)
     return points[choices], choices
 
+# copied from 3d timing histogram simulation
 pulse = [[[0.0000, 0.0000, 0.0000, 0.0000, 0.0001, 0.0013, 0.0105, 0.0520, 0.1528, 0.2659, 0.2743, 0.1676, 0.0607, 0.0130, 0.0017, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]
 
 
@@ -58,7 +63,7 @@ def parse_args():
         help='Method used for converting histograms to point clouds')
     parser.add_argument(
         '--sbr',
-        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '1_10', '1_20', '1_50', '1_100'],
+        choices=['5_1', '5_50', '5_100', '5_250', '5_500', '5_1000', '5_2000', '1_10', '1_20', '1_50', '1_100'],
         default='1_50',
         help='SBR')
     parser.add_argument(
@@ -66,8 +71,6 @@ def parse_args():
         choices=['sunrgbd', 'kitti'],
         default='sunrgbd',
         help='select a dataset')
-    parser.add_argument('--num_peaks', default=None, type=int,
-                    help='num peaks for each pixel')
     parser.add_argument('--threshold', default=None, type=float,
                     help='threshold for spad filtering')
     parser.add_argument('--outfolder_prefix', default=None, type=str,
@@ -85,7 +88,7 @@ def camera_params(K):
     fx, fy = K[0,0], K[1,1]
     return cx, cy, fx, fy
 
-# Convert dist to depth
+# Convert dist to depth, for sunrgbd
 def finaldepth(nr, nc, K, dist, gtvalid):
     xx = np.linspace(1, nc, nc)
     yy = np.linspace(1, nr, nr)
@@ -103,7 +106,7 @@ def finaldepth(nr, nc, K, dist, gtvalid):
     return depthmap
 
 
-# Convert depth to point cloud
+# Convert depth to point cloud, for sunrgbd
 def depth2points(nr, nc, K, depthmap, Rtilt):
     depthmap = (depthmap>>3 | np.uint16(depthmap<<13))
     depthmap = depthmap.astype('float32')/1000.
@@ -131,7 +134,7 @@ def sph2cart(az, el, r):
     return x, y, z
 
 
-# Convert spherical cordinates to point cloud
+# Convert spherical cordinates to point cloud, for kitti
 def dist2points(nr, nc, dist, az, el):
     X, Y, Z = sph2cart(az, el, dist)
     points3d = np.stack([X, Y, Z])
@@ -139,12 +142,8 @@ def dist2points(nr, nc, dist, az, el):
     return points3d
 
 
-
 def argmaxfilteringsbr(spad, gaussian_filter_pulse=False):
     spad[:,:,:20] = 0
-    #if(decompressed):
-    #    # compress and decompress using truncated fourier
-    #    spad = decompress(spad)
     if(gaussian_filter_pulse):
         gf_pulse = np.zeros((5,5,22))
         gf_pulse[2,2,:] = pulse[0][0]
@@ -169,7 +168,6 @@ def human_format(num, pos):
     while abs(num) >= 1000:
         magnitude += 1
         num /= 1000.0
-    # add more suffixes if you need them
     return '%d%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 
@@ -180,9 +178,13 @@ def main(args):
         basefolder = SUNRGBDBASE
         gen_folder = SUNRGBD_GEN_FOLDER
         metadata = scipy.io.loadmat( os.path.join(basefolder,SUNRGBDMeta) )['SUNRGBDMeta'][0]
+        scenes = [str(x).zfill(6) for x in range(1,10336)]
     else:
         basefolder = KITTIBASE
         gen_folder = KITTI_GEN_FOLDER
+        scenes = [str(x).zfill(6) for x in range(7481)]
+    #scenes = open(os.path.join(basefolder, 'all_data_idx.txt')).readlines()
+    #scenes = [x.strip() for x in scenes]
 
     outfolder = os.path.join(basefolder, OUTFOLDERNAME)
     if(args.outfolder_prefix):
@@ -204,8 +206,6 @@ def main(args):
     all_correct_neighspweighted, all_incorrect_neighspweighted = [], []
     cfmax = 0
 
-    scenes = open(os.path.join(basefolder, 'all_data_idx.txt')).readlines()
-    scenes = [x.strip() for x in scenes]
 
     start, end = 0, len(scenes)
     if(args.start is not None):
@@ -256,8 +256,8 @@ def main(args):
     
         spad = data['spad'].toarray()
         spad = spad.reshape((nr, nc, nt), order='F')
-        #spadcopy = scipy.signal.convolve(spad, pulse, mode='same')
-        #spadcopy = spad.copy()
+        # densitysum is total photon count, density is photon count of peak (selected) bin
+        # photon counts are after convolution with pulse
         if(args.method=='argmax-filtering-sbr'):
             spad, density, densitysum = argmaxfilteringsbr(spad)
         elif(args.method=='gaussfilter-argmax-filtering-sbr'):
@@ -266,6 +266,7 @@ def main(args):
             print('Not implemented')
             exit(0)
 
+        # ignore very small peaks
         if(args.threshold is not None):
             thresh_mask = density>=args.threshold
             spad, density, densitysum = spad*thresh_mask, density*thresh_mask, densitysum*thresh_mask
@@ -279,10 +280,13 @@ def main(args):
         if(args.dataset=='sunrgbd'):
             depthmap = finaldepth(nr, nc, K, dist, gtvalid)
             points3d = depth2points(nr, nc, K, depthmap, Rtilt)
-            valid = np.all(points3d, axis=0) # only select points that have non zero locations    
+            # only select points that have non zero locations because of removing gtvalid points 
+            # points with zero photons should have zero locations 
+            valid = np.all(points3d, axis=0)
         else:
             points3d = dist2points(nr, nc, dist, az, el)
-            valid = density>0 # only select points that have positive photon counts    
+            # only select points that have positive photon counts    
+            valid = density>0
 
 
         density = density[valid]
