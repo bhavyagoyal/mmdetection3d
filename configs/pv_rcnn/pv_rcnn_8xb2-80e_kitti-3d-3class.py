@@ -73,7 +73,7 @@ test_pipeline = [
             dict(
                 type='PointsRangeFilter', point_cloud_range=point_cloud_range)
         ]),
-#    dict(type='Pack3DDetInputs', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d']) # for vis
+    dict(type='Pack3DDetInputs', keys=['points'])#, 'gt_bboxes_3d', 'gt_labels_3d']) # for vis
 ]
 
 model = dict(
