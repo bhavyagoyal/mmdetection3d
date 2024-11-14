@@ -193,7 +193,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                    vis_mode: str = 'replace',
                    frame_cfg: dict = dict(size=1, origin=[0, 0, 0]),
                    points_color: Tuple[float] = (0.8, 0.8, 0.8),
-                   points_size: int = 2,
+                   points_size: int = 2,  # size 4 for adaps visualization
                    mode: str = 'xyz') -> None:
         """Set the point cloud to draw.
 
@@ -255,9 +255,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                 points_colors /= 255.0
             if(self.norm_color):
                 pt_cls = sorted(points_colors[:,0])
-                mn, mx = pt_cls[100], pt_cls[-100]
+                mn, mx = pt_cls[0], pt_cls[-200]
                 points_colors = np.clip(points_colors[:,0], mn, mx)
-                points_colors = (points_colors-mn)/mx
+                points_colors = (points_colors-mn)/(mx-mn)
                 points_colors = sns.color_palette('coolwarm', as_cmap=True)(points_colors)[:,:3]
         else:
             raise NotImplementedError
@@ -881,7 +881,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if(save_path):
                 #camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
                 #camfile = 'flim/' + '000001-camera.json'
-                camfile = 'cam_selected/' + 'kitti-000001-camera.json'
+                camfile = 'cam_selected/' + 'front30adaps.json'
+                #camfile = 'cam_selected/' + 'kitti-000001-camera.json'
                 if(os.path.exists(camfile)): 
                     with open(camfile, 'rb') as f:
                         self.o3d_vis.set_view_status(f.read().strip())

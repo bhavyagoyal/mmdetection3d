@@ -444,44 +444,45 @@ THRESH=$3
 #	model.neighbor_score=0.1 \
 
 
-IFS=', ' read -r -a NSCOREALL <<< $NSCORE
-for NSCORECURR in "${NSCOREALL[@]}"
-do
-
-#day 10
-#EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdatedX_post_newfps001/first50000_spupdated0003_post_newfps001/
-#CHECKPOINT=${EXPERIMENT}/epoch_12.pth
-EXPERIMENT=work_dir_py/kitti/pointpillar/3class/baseline/
-CHECKPOINT=${EXPERIMENT}/epoch_80.pth
-#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
-CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pointpillars/pointpillars_hv_secfpn_8xb6-160e_kitti-3d-3class.py   ${CHECKPOINT} \
-	--show-dir outimages  --task lidar_det --show --wait-time -1 --score-thr $SCORETHRESH \
-	--work-dir work_dir_flim/ppc_${NSCORECURR}_${SCORETHRESH} \
-	--load-pts-again \
-	--cfg-options \
-	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
-	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
-	test_dataloader.dataset.pipeline.0.load_dim=8 \
-	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
-
-
-
-
-#	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
-#	test_dataloader.dataset.pipeline.1.transforms.2.num_points=100000 \
-
-
-
-# --color-idxs -5 -5 -5 \
-#	test_dataloader.dataset.ann_file='sunrgbd_infos_val.pkl' \
-#	--norm-color \
-	#model.processed_points=True \
-	#model.filter_index=5 \
-	#model.neighbor_score=$NSCORECURR \
-
-       
-done
-
+#IFS=', ' read -r -a NSCOREALL <<< $NSCORE
+#for NSCORECURR in "${NSCOREALL[@]}"
+#do
+#
+##day 10
+## revert back for ppc on sunrgbd
+##EXPERIMENT=work_dir_py/sbr/0.3/joint/first50000_spupdatedX_post_newfps001/first50000_spupdated0003_post_newfps001/
+##CHECKPOINT=${EXPERIMENT}/epoch_12.pth
+#EXPERIMENT=work_dir_py/kitti/pointpillar/3class/baseline/
+#CHECKPOINT=${EXPERIMENT}/epoch_80.pth
+##CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/votenet/votenet_8xb16_sunrgbd-3d.py ${CHECKPOINT} \
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pointpillars/pointpillars_hv_secfpn_8xb6-160e_kitti-3d-3class.py   ${CHECKPOINT} \
+#	--show-dir outimages  --task lidar_det --show --wait-time -1 --score-thr $SCORETHRESH \
+#	--work-dir work_dir_flim/ppc_${NSCORECURR}_${SCORETHRESH} \
+#	--load-pts-again \
+#	--cfg-options \
+#	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,4]" \
+#
+#
+#
+#
+##	test_dataloader.dataset.pipeline.1.transforms.2.firstk_sampling=True \
+##	test_dataloader.dataset.pipeline.1.transforms.2.num_points=100000 \
+#
+#
+#
+## --color-idxs -5 -5 -5 \
+##	test_dataloader.dataset.ann_file='sunrgbd_infos_val.pkl' \
+##	--norm-color \
+#	#model.processed_points=True \
+#	#model.filter_index=5 \
+#	#model.neighbor_score=$NSCORECURR \
+#
+#       
+#done
+#
 
 
 
@@ -546,6 +547,89 @@ done
 #	model.neighbor_score=$NSCORECURR \
 #
 #       
+#done
+
+
+
+
+#### KITTI models
+
+IFS=', ' read -r -a NSCOREALL <<< $NSCORE
+for NSCORECURR in "${NSCOREALL[@]}"
+do
+
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/npupdated_ad01/
+#CHECKPOINT=${EXPERIMENT}/epoch_9.pth
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/npupdated00001/
+CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+#CHECKPOINT=checkpoints/pv_rcnn_8xb2-80e_kitti-3d-3class_20221117_234428-b384d22f.pth
+
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr $SCORETHRESH --color-idxs -1 -1 -1   \
+	--norm-color \
+	--work-dir work_dir_flim/ppc_${NSCORECURR}_${SCORETHRESH} \
+	--cfg-options \
+	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
+	test_evaluator.ann_file='data/kitti/kitti_infos_test.pkl' \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.pipeline.0.load_dim=8 \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,4]" \
+	model.data_preprocessor.in_channels=4 \
+	model.processed_points=True \
+	model.data_preprocessor.neighbor_score=${NSCORECURR} \
+	model.data_preprocessor.filter_index=4 \
+	model.data_preprocessor.max_ball_neighbors=32 \
+	model.data_preprocessor.ball_radius=0.8 \
+
+
+
+#	model.data_preprocessor.ad_neighbor_score=True \
+#	--load-pts-again \
+# --color-idxs -5 -5 -5 \
+#	--norm-color \
+done
+
+
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/baseline/
+CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr $SCORETHRESH --no-color  \
+	--work-dir work_dir_flim/points_${SCORETHRESH} \
+	--cfg-options \
+	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
+	test_evaluator.ann_file='data/kitti/kitti_infos_test.pkl' \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.pipeline.0.load_dim=8 \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5]" \
+	model.data_preprocessor.in_channels=4 \
+	model.processed_points=True \
+
+
+
+
+## edit config file to add sampling transform
+#IFS=', ' read -r -a THRESHALL <<< $THRESH
+#for THRESHCURR in "${THRESHALL[@]}"
+#do
+#
+#EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/thresh/thresh_ad10/
+#CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+#CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class.py ${CHECKPOINT}  \
+#	--show-dir outimages  --task lidar_det --show --wait-time 0.1 --score-thr $SCORETHRESH --no-color  \
+#	--work-dir work_dir_flim/thresh${THRESHCURR}_$SCORETHRESH \
+#	--cfg-options \
+#	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
+#	test_evaluator.ann_file='data/kitti/kitti_infos_test.pkl' \
+#	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+#	test_dataloader.dataset.pipeline.0.load_dim=8 \
+#	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,3]" \
+#	model.data_preprocessor.in_channels=4 \
+#	model.processed_points=True \
+#	test_dataloader.dataset.pipeline.1.threshall_sampling=$THRESHCURR \
+#	test_dataloader.dataset.pipeline.1.thresh_index=4 \
+#
+#
+#
 #done
 
 

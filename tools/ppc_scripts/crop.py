@@ -34,7 +34,11 @@ img = cv2.imread(fname, cv2.IMREAD_UNCHANGED)
 # day 13 confroom 
 #img = img[300:800,700:1200,:] # top # front
 
-# day 10
-img = img[300:800,700:1200,:] # top # front
+## day 10
+#img = img[300:800,700:1200,:] # top # front
+
+
+## adaps
+img = img[200:900,100:1800,:] # top # front
 
 cv2.imwrite(fnameout, img)
