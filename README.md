@@ -1,3 +1,100 @@
+## Robust 3D Object Detection using Probabilistic Point Clouds
+
+**Under Review** <br> [PDF](https://drive.google.com/file/d/1ErBsG4QKFJozsgoB9cveZU7j2PgNchWp) &nbsp; [Project](https://bhavyagoyal.github.io/ppc)
+
+![teaser](resources/ppc_teaser.jpg)
+
+#### [Bhavya Goyal](https://bhavyagoyal.github.io), [Felipe Gutierrez-Barragan](https://pages.cs.wisc.edu/~felipe/), [Mohit Gupta](https://wisionlab.cs.wisc.edu/people/mohit-gupta/)
+University of Wisconsin-Madison
+
+
+
+### Abstract
+LiDAR-based 3D cameras output point clouds, a canonical 3D scene representation used in various 3D scene understanding applications. Although modern LiDARs provide high-fidelity geometric information in nominal conditions, they often perform poorly in non-ideal real-world scenarios producing erroneous point clouds. These errors, which are rooted in the noisy raw LiDAR measurements, get propagated to downstream vision models resulting in severe loss of accuracy. This is because conventional 3D processing pipelines used to construct point clouds from raw LiDAR sensor measurements do not retain the noise and uncertainty information available in the raw sensor data. 
+
+We propose a novel 3D scene representation called Probabilistic Point Clouds (PPC) where each point is augmented with a probability attribute that encapsulates the measurement uncertainty (confidence) in raw sensor data. We further introduce inference approaches that leverage PPC for robust 3D object detection; these methods are versatile and can be used as computationally lightweight drop-in modules in 3D inference pipelines. We demonstrate, via both simulations and real captures, that the PPC-based 3D processing methods outperform several baselines with LiDAR as well as Camera-LiDAR fusion models, across challenging indoor and outdoor scenarios involving small, distant, and low-albedo objects, as well as strong ambient light.
+
+
+
+### Code Structure
+```bash
+.                                  # MMdetection3d Code
+.
+.
+├── tools/ppc_simulation/          # Code for Probabilistic Point Cloud Simulation
+└── README.md
+```
+
+
+
+### Requirements/Installation
+- Follow the [Installation](https://mmdetection3d.readthedocs.io/en/latest/get_started.html) steps for mmdetection3d framework.
+- `matlab` is required for PPC simulation.
+
+
+
+### Probabilistic Point Cloud (PPC) Simulation
+- Follow the original dataset [instructions](https://mmdetection3d.readthedocs.io/en/latest/user_guides/dataset_prepare.html) to prepare clean point cloud dataset.
+- Use `ppc_simulate.sh` to simulate 3D temporal waveforms.
+```bash
+cd tools/ppc_simulation
+./ppc_simulate.sh 0 10
+```
+
+- Use `gen_points.sh` to create probabilistic point clouds from the 3D waveforms.
+```bash
+./gen_points.sh 0 10
+```
+
+- Use `create_pkl.py` to create label files for the whole dataset. It also creates a copy of clean point clouds to create ppc with probability 1.
+```bash
+python create_pkl.py
+```
+Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increase 10 to the size of the dataset to simulate all scenes.
+
+
+
+### Training/Evaluating PPC models
+- Train PPC model using `ppc_train.sh` script. Uncomment lines in the script to train all PPC models and baselines.
+```bash
+./ppc_train.sh
+```
+
+- Evaluate PPC model using `ppc_test.sh` script.
+```bash
+./ppc_test.sh
+```
+
+
+
+### Results/Models
+
+#### SUN RGB-D
+
+|   Method           |          |          |  AP@25    |          |          |       Download      |
+|-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
+|                    |  *Clean* |    *0.1* |   *0.05*  |  *0.02*  |   *0.01* |                     |
+|  Matched Filtering |   51.34  |   42.43  |   38.77   |  16.95   |   11.34  | [model]() \| [log]()|
+|  Thresholding      |   57.11  |   51.27  |   46.44   |  29.58   |   16.47  | [model]() \| [log]()|
+|  [PPC]()           | **58.61**| **54.29**| **52.46** |**38.49** | **29.42**| [model]() \| [log]()|
+
+#### KITTI
+
+|   Method           |          |          |  mAP    |          |          |       Download      |
+|-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
+|                    |  *Clean* |   *0.05* |   *0.02*  |  *0.01*  | *0.005*  |                     |
+|  Matched Filtering |   71.11  |   63.31  |   57.25   |  50.25   |   40.90  | [model]() \| [log]()|
+|  Thresholding      |   70.66  |   63.65  |   58.52   |  51.20   |   41.57  | [model]() \| [log]()|
+|  [PPC]()           | **71.31**| **64.56**| **59.38** |**53.11** | **45.33**| [model]() \| [log]()|
+
+
+
+Model weights will be updated soon.
+
+
+
+
+
 <div align="center">
   <img src="resources/mmdet3d-logo.png" width="600"/>
   <div>&nbsp;</div>
