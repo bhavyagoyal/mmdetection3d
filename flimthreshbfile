@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+DATAPATH=points_visual/
+SCORETHRESH=$1
+THRESH=$2
+
+# edit config file to add sampling transform
+IFS=', ' read -r -a THRESHALL <<< $THRESH
+for THRESHCURR in "${THRESHALL[@]}"
+do
+
+EXPERIMENT=work_dir_py/kitti/pvrcnn/3class/joint_5fluxunder2048/0.3/thresh/thresh_ad10/
+CHECKPOINT=${EXPERIMENT}/epoch_10.pth
+CUDA_VISIBLE_DEVICES=0 python -u tools/test.py configs/pv_rcnn/pv_rcnn_8xb2-80e_kitti-3d-3class_thresh.py ${CHECKPOINT}  \
+	--show-dir outimages  --task lidar_det --show --wait-time 3.0 --score-thr $SCORETHRESH --no-color  \
+	--work-dir work_dir_flim/thresh${THRESHCURR}_$SCORETHRESH \
+	--cfg-options \
+	test_dataloader.dataset.ann_file='kitti_infos_test.pkl' \
+	test_evaluator.ann_file='data/kitti/kitti_infos_test.pkl' \
+	test_dataloader.dataset.data_prefix.pts=${DATAPATH} \
+	test_dataloader.dataset.pipeline.0.load_dim=8 \
+	test_dataloader.dataset.pipeline.0.use_dim="[0,1,2,5,3]" \
+	model.data_preprocessor.in_channels=4 \
+	model.processed_points=True \
+	test_dataloader.dataset.pipeline.1.threshall_sampling=$THRESHCURR \
+	test_dataloader.dataset.pipeline.1.thresh_index=4 \
+
+
+
+done
+
+

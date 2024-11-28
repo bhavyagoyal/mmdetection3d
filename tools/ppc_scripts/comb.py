@@ -23,8 +23,12 @@ for file in files:
             x, y = np.where(img[:,:,0]>0)
             x1, x2 = min(x), max(x)
             y1, y2 = min(y), max(y)
-            MAR = 0 # 50 SUNRGBD, 10 for KITTI
-            marginx, marginy = min(MAR,int((x2-x1)*0.25)), min(MAR,int((y2-y1)*0.25))
+            ### SUNRGBD
+            #marginx, marginy = min(50,int((x2-x1)*0.25)), min(50,int((y2-y1)*0.25))
+            #x1, x2 = max(0, x1-marginx), min(x2+marginx, img.shape[0])
+            #y1, y2 = max(0, y1-marginy), min(y2+marginy, img.shape[1])
+            ## KITTI
+            marginx, marginy = min(0,int((x2-x1)*0.25)), min(0,int((y2-y1)*0.25))
             x1, x2 = max(0, x1-marginx), min(x2+marginx+10, img.shape[0])
             y1, y2 = max(0, y1-marginy), min(y2+marginy, img.shape[1])
         if(curr_dir.split('/')[-1]=='image'):

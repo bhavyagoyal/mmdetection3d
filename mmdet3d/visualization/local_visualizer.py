@@ -193,7 +193,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                    vis_mode: str = 'replace',
                    frame_cfg: dict = dict(size=1, origin=[0, 0, 0]),
                    points_color: Tuple[float] = (0.8, 0.8, 0.8),
-                   points_size: int = 2,  # size 4 for adaps visualization
+                   points_size: int = 4,  # size 4 for adaps visualization
                    mode: str = 'xyz') -> None:
         """Set the point cloud to draw.
 
@@ -881,8 +881,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             if(save_path):
                 #camfile = 'cam_topview/' + save_path.split('/')[-1][:-4]+'-camera.json'
                 #camfile = 'flim/' + '000001-camera.json'
-                camfile = 'cam_selected/' + 'front30adaps.json'
-                #camfile = 'cam_selected/' + 'kitti-000001-camera.json'
+                camfile = 'cam_selected/' + 'front30adaps.json' # visual adaps results
+                #camfile = 'cam_selected/' + 'kitti30-000001-camera.json' # kitti spinning visuals
                 if(os.path.exists(camfile)): 
                     with open(camfile, 'rb') as f:
                         self.o3d_vis.set_view_status(f.read().strip())
@@ -896,11 +896,11 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             #self.view_control.set_up([0,0,1])
             ##self.view_control.set_zoom(0.5)
 
-            #STEP=5
-            #STEP_SIZE=5
-            #xcount, ycount = STEP-1, 2*STEP-1
-            #xr, yr = 0, -STEP
-            #count = 0
+            STEP=5
+            STEP_SIZE=5
+            xcount, ycount = STEP-1, 2*STEP-1
+            xr, yr = 0, -STEP
+            count = 0
             self.flag_exit = not self.o3d_vis.poll_events()
             self.o3d_vis.update_renderer()
             # if not hasattr(self, 'view_control'):
@@ -912,19 +912,19 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                 self.last_time = time.time()
                 while time.time(
                 ) - self.last_time < wait_time and self.o3d_vis.poll_events():
-                    #xcount, ycount = (xcount+1)%(4*STEP), (ycount+1)%(4*STEP)
-                    #count+=1
-                    #xr, yr = xr + ((xcount>=2*STEP)*2-1), yr + ((ycount>=2*STEP)*2-1)
-                    #self.view_control.rotate(xr*STEP_SIZE,yr*STEP_SIZE)
+                    xcount, ycount = (xcount+1)%(4*STEP), (ycount+1)%(4*STEP)
+                    count+=1
+                    xr, yr = xr + ((xcount>=2*STEP)*2-1), yr + ((ycount>=2*STEP)*2-1)
+                    self.view_control.rotate(xr*STEP_SIZE,yr*STEP_SIZE)
                     self.o3d_vis.update_renderer()
                     self.view_port = \
                         self.view_control.convert_to_pinhole_camera_parameters()  # noqa: E501
-                    #if save_path is not None:
-                    #    if not (save_path.endswith('.png') or save_path.endswith('.jpg')):
-                    #        save_path += '.png'
-                    #    sp_rotated = save_path[:-4]+'_'+str(count).zfill(3)+'.png'
-                    #    if(count<=4*STEP and not os.path.exists(sp_rotated)):
-                    #        self.o3d_vis.capture_screen_image(sp_rotated, False)
+                    if save_path is not None:
+                        if not (save_path.endswith('.png') or save_path.endswith('.jpg')):
+                            save_path += '.png'
+                        sp_rotated = save_path[:-4]+'_'+str(count).zfill(3)+'.png'
+                        if(count<=4*STEP and not os.path.exists(sp_rotated)):
+                            self.o3d_vis.capture_screen_image(sp_rotated, False)
                 while self.flag_pause and self.o3d_vis.poll_events():
                     self.o3d_vis.update_renderer()
                     self.view_port = \
