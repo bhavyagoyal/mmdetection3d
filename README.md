@@ -1,16 +1,19 @@
-## Probabilistic Point Clouds from Single-Photon LiDARs for Robust 3D Inference
+## Robust 3D Object Detection using Probabilistic Point Clouds from Single-Photon LiDARs
 
-**Under Review** <br> [PDF](https://drive.google.com/file/d/1ErBsG4QKFJozsgoB9cveZU7j2PgNchWp) &nbsp; [Project](https://bhavyagoyal.github.io/ppc)
+**ICCV 2025** <br> [PDF](https://drive.google.com/file/d/1ErBsG4QKFJozsgoB9cveZU7j2PgNchWp) &nbsp; [Project](https://bhavyagoyal.github.io/ppc)
 
 ![teaser](resources/ppc_teaser.jpg)
 
-#### [Bhavya Goyal](https://bhavyagoyal.github.io), [Felipe Gutierrez-Barragan](https://pages.cs.wisc.edu/~felipe/), [Mohit Gupta](https://wisionlab.cs.wisc.edu/people/mohit-gupta/)
+#### [Bhavya Goyal](https://bhavyagoyal.github.io), [Felipe Gutierrez-Barragan](https://pages.cs.wisc.edu/~felipe/), [Wei Lin](https://www.linkedin.com/in/wei-lin-31a437108), [Andreas Velten](https://biostat.wisc.edu/~velten/), [Yin Li](https://www.biostat.wisc.edu/~yli/), [Mohit Gupta](https://wisionlab.cs.wisc.edu/people/mohit-gupta/)
 University of Wisconsin-Madison
 
 
 
 ### Abstract
-LiDAR-based 3D sensors provide point clouds, a canonical 3D representation used in various 3D scene understanding tasks. Modern LiDARs face key challenges in various real-world scenarios such as long-distance or low-albedo objects, producing sparse or erroneous point clouds. These errors, which are rooted in the noisy raw LiDAR measurements, get propagated to downstream perception models, resulting in potentially severe loss of accuracy. This is because conventional 3D processing pipelines used to construct point clouds from raw LiDAR measurements do not retain the uncertainty information available in the raw sensor data. We propose a novel 3D scene representation called Probabilistic Point Clouds (PPC) where each point is augmented with a probability attribute that encapsulates the measurement uncertainty (confidence) in raw data. We further introduce inference approaches that leverage PPC for robust 3D object detection; these methods are versatile and can be used as computationally lightweight drop-in modules in 3D inference pipelines. We demonstrate, via both simulations and real captures, that PPC-based 3D inference methods outperform several baselines with LiDAR as well as camera-LiDAR fusion models, across challenging indoor and outdoor scenarios involving small, distant, and low-albedo objects, as well as strong ambient light.
+LiDAR-based 3D sensors provide point clouds, a canonical 3D representation used in various scene understanding tasks. Modern LiDARs face key challenges in several real-world scenarios, such as long-distance or low-albedo objects, producing sparse or erroneous point clouds. These errors, which are rooted in the noisy raw LiDAR measurements, get propagated to downstream perception models, resulting in potentially severe loss of accuracy.
+This is because conventional 3D processing pipelines do not retain any uncertainty information from the raw measurements when constructing point clouds.
+
+We propose Probabilistic Point Clouds (PPC), a novel 3D scene representation where each point is augmented with a probability attribute that encapsulates the measurement uncertainty (or confidence) in the raw data. We further introduce inference approaches that leverage PPC for robust 3D object detection; these methods are versatile and can be used as computationally lightweight drop-in modules in 3D inference pipelines. We demonstrate, via both simulations and real captures, that PPC-based 3D inference methods outperform several baselines using LiDAR as well as camera-LiDAR fusion models, across challenging indoor and outdoor scenarios involving small, distant, and low-albedo objects, as well as strong ambient light.
 
 
 ### Code Structure
@@ -77,7 +80,7 @@ Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increas
 
 #### KITTI
 
-##### Pedestrian (3 class model)
+##### Pedestrian mAP for PV-RCNN (3 class) model. Evaluated on KITTI val split using 11 recall positions for moderate difficulty
 
 |   Method           |          |          |    mAP    |          |          |       Download      |
 |-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
