@@ -60,6 +60,26 @@
 # cd mmdetection3d, pip install -v -e .
 
 
+## CDM env1
+## Issue: torch>=2.6 requires torch.load weights only false
+#conda create -n openmmlabcdm python=3.11
+#conda activate openmmlabcdm
+#pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128
+## for faster mmcv build, install psutil ninja
+#pip install psutil ninja
+#pip install mmcv==2.1.0
+#pip install mmdet==3.3.0
+#pip install -v -e .
+
+## CDM env2 
+#conda create -n openmmlabcdm2 python=3.8
+#conda activate openmmlabcdm2
+#pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+#pip install mmcv==2.0.1 -f  https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
+#pip install mmdet==3.1.0
+#pip install -v -e .
+
+
 # Load Environment
 #module load anaconda/mini/23.3.1
 module load conda/miniforge/23.1.0
