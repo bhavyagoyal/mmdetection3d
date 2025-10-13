@@ -231,4 +231,31 @@ PORT=${PORTUSED} ./tools/dist_train.sh configs/fcaf3d/fcaf3d_2xb8_sunrgbd-3d-10c
 
 
 
+########## SUNRGB  extra params for training and testing ############
+
+
+#	model.backbone.in_channels=6 \
+#	model.backbone.sa_mask=True \
+#	model.backbone.clip=0.9 \
+
+	#model.bbox_head.proposals_conf=1 \
+	#model.bbox_head.clip=0.9 \
+	#model.post_sort=4 \
+	#model.updated_fps=0.005 \
+#	model.max_ball_neighbors=256 \
+
+	#train_dataloader.dataset.dataset.pipeline.0.unit_probabilities=3 \
+	#val_dataloader.dataset.pipeline.0.unit_probabilities=3 \
+
+
+#	model.backbone.in_channels=6 \
+#	model.backbone.sa_mask=True \
+#	model.bbox_head.proposals_conf=2 \
+#	model.bbox_head.clip=0.9 \
+#	model.backbone.clip=0.9 \
+#	model.post_sort=4 \
+#	model.updated_fps=0.005 \
+
+
+
 

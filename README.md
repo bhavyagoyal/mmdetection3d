@@ -15,29 +15,73 @@ LiDAR-based 3D sensors provide point clouds, a canonical 3D representation used 
 We propose Probabilistic Point Clouds (PPC), a novel 3D scene representation where each point is augmented with a probability attribute that encapsulates the measurement uncertainty (or confidence) in the raw data. We further introduce inference approaches that leverage PPC for robust 3D object detection; these methods are versatile and can be used as computationally lightweight drop-in modules in 3D inference pipelines. We demonstrate, via both simulations and real captures, that PPC-based 3D inference methods outperform several baselines using LiDAR as well as camera-LiDAR fusion models, across challenging indoor and outdoor scenarios involving small, distant, and low-albedo objects, as well as strong ambient light.
 
 
-### Code Structure
+<!-- ### Code Structure
 ```bash
 .                                  # MMdetection3d Code
 .
 .
 ├── tools/ppc_simulation/          # Code for Probabilistic Point Cloud Simulation
 └── README.md
-```
+``` -->
 
 
 
 ### Requirements/Installation
-- Follow the [Installation](https://mmdetection3d.readthedocs.io/en/latest/get_started.html) steps for mmdetection3d framework.
-- `matlab` is required for PPC simulation.
+Follow the [Installation](https://mmdetection3d.readthedocs.io/en/latest/get_started.html) steps for mmdetection3d framework. Or use my conda setup.
+<details>
+<summary>My conda setup</summary>
 
-
-
-### Probabilistic Point Cloud (PPC) Simulation
-- Follow the original dataset [instructions](https://mmdetection3d.readthedocs.io/en/latest/user_guides/dataset_prepare.html) to prepare clean point cloud dataset.
-- Use `ppc_simulate.sh` to simulate 3D temporal waveforms.
 ```bash
-cd tools/ppc_simulation
-./ppc_simulate.sh 0 10
+conda create -n openmmlab python=3.8
+conda activate openmmlab
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+pip install mmcv==2.0.1 -f  https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
+pip install mmdet==3.1.0
+pip install -v -e .
+```
+
+</details>
+
+
+
+### Dataset
+
+- Download and extract the [dataset](https://pages.cs.wisc.edu/~bhavya/ppcshared/data/sunrgbd/sunrgbd_points_ppc_1_100.tar.gz) (~12GB) file. Download the validation [labels](https://pages.cs.wisc.edu/~bhavya/ppcshared/data/sunrgbd/sunrgbd_infos_val.pkl) file. Use the following directory structure to organize the dataset.
+```bash
+.
+.
+└── data/          
+|   └── sunrgbd/
+|   |   └── sunrgbd_points_ppc/
+|   |   |   └── sunrgbd_infos_val.pkl 
+|   |   |   └── clean/
+|   |   |   |   └── 0000001.bin
+|   |   |   └── 1_100/
+|   |   |   └── 1_50/
+.
+.
+|   └── kitti/
+|   |   └── kitti_points_ppc/
+|   |   |   └── kitti_infos_val.pkl 
+|   |   |   └── clean/
+|   |   |   |   └── 0000000.bin
+|   |   |   └── 5_1000/
+.
+.
+```
+
+If you need to evaluate on all SBR levels, you can download all `sunrgbd_points_ppc_*` files <a href="https://pages.cs.wisc.edu/~bhavya/ppcshared/data/sunrgbd/">here</a>.</summary>
+
+<details>
+<summary>If you need to simulate PPCs yourself using different simulation parameters, or evaluate on a different dataset, you can use my simulation scripts.</summary>
+
+
+- Follow the original dataset [instructions](https://mmdetection3d.readthedocs.io/en/latest/user_guides/dataset_prepare.html) to prepare clean point cloud dataset.
+- Use `ppc_simulate.sh` to simulate 3D temporal waveforms. `matlab` is required.
+
+```bash
+  cd tools/ppc_simulation
+  ./ppc_simulate.sh 0 10
 ```
 
 - Use `gen_points.sh` to create probabilistic point clouds from the 3D waveforms.
@@ -51,24 +95,30 @@ python create_pkl.py
 ```
 Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increase 10 to the size of the dataset to simulate all scenes.
 
+</details>
 
 
-### Training/Evaluating PPC models
-- Train PPC model using `ppc_train.sh` script. Uncomment lines in the script to train all PPC models and baselines.
+### Evaluating PPC model
+
+Evaluate PPC model using `ppc_test_*.sh` scripts. 
 ```bash
-./ppc_train.sh
+./ppc_test_votenet.sh 1_100 <model_weights.pth>
 ```
 
-- Evaluate PPC model using `ppc_test.sh` script.
+Scripts also include baselines evaluation code in comments. Use `ppc_test_pvrcnn.sh` and `ppc_test_imvotenet.sh` for PV-RCNN and ImVoteNet evaluation.
+
+### Training PPC model
+Train PPC model using `ppc_train.sh` script. Uncomment lines in the script to train all PPC models and baselines.
 ```bash
-./ppc_test.sh
+./ppc_train.sh
 ```
 
 
 
 ### Results/Models
 
-#### SUN RGB-D
+####  VoteNet
+Evaluated on SUN RGBD validation dataset.
 
 |   Method           |          |          |  AP@25    |          |          |       Download      |
 |-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
@@ -77,16 +127,16 @@ Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increas
 |  Thresholding      |   57.11  |   51.27  |   46.44   |  29.58   |   16.47  | [model](https://drive.google.com/file/d/1LznG5jQZf_fAqyQJa6WvuyEzAsX0x-8j/view?usp=sharing) \| [log](https://drive.google.com/file/d/12rsry3ZbKyFZy9oXyXBcThLYHzYRTzzd/view?usp=sharing)|
 |  **PPC**           | **58.61**| **54.29**| **52.46** |**38.49** | **29.42**| [model](https://drive.google.com/file/d/1AQ7r7k5UhbCmJpElhzA7NuKGJadN0n-E/view?usp=sharing) \| [log](https://drive.google.com/file/d/1Us8nX_4eYWnlkIJIhy9oswhQpxfHqBtK/view?usp=sharing)|
 
-#### KITTI
+#### PV-RCNN
 
 ##### Pedestrian mAP for PV-RCNN (3 class) model. Evaluated on KITTI val split using 11 recall positions for moderate difficulty
 
 |   Method           |          |          |    mAP    |          |          |       Download      |
 |-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
 |                    |  *Clean* |   *0.05* |   *0.02*  |  *0.01*  | *0.005*  |                     |
-|  Matched Filtering |   60.11  |   55.76  |   50.03   |  47.06   |   37.01  | [model](https://drive.google.com/file/d/1B8V3Dk4LTZEOIRjmLxymx2wRQT5M0uA4/view?usp=sharing) \| [log](https://drive.google.com/file/d/1gvC2EpiVNgzMcfOTn-TGmDeR_ch8zapb/view?usp=sharing)|
-|  Thresholding      |   58.63  |   57.72  |   54.80   |  49.23   |   38.62  | [model](https://drive.google.com/file/d/1LllqAZePuE8OwW-IdWgp9gdsnyBQZwau/view?usp=sharing) \| [log](https://drive.google.com/file/d/1B8MpaE8utVS829ZfShgCN6ANJ8HsMxDe/view?usp=sharing)|
-|  **PPC**           | **60.62**| **59.12**| **59.04** |**55.39** | **49.51**| [model](https://drive.google.com/file/d/1lU8cJ35a_kRzn2bVNab-DfeYigYMZxrp/view?usp=sharing) \| [log](https://drive.google.com/file/d/1-taW8VtjkJ5HiXcbNnH2MjtBt9_k2mmT/view?usp=sharing)|
+|  Matched Filtering |   60.11  |   55.76  |   50.03   |  47.06   |   37.01  | [model](https://drive.google.com/file/d/15B42nZeFDY4xHpld-LVZbzmWmbX2mK2a/view?usp=sharing) \| [log](https://drive.google.com/file/d/1BD-5KTs7CZiJznhf9WlnQVWcjYWxf6jg/view?usp=sharing)|
+|  Thresholding      |   61.62  |   57.72  |   54.80   |  49.23   |   38.62  | [model](https://drive.google.com/file/d/1PLpn1gwvWz_v3hsSYnBmxN4nJUNuiX3-/view?usp=sharing) \| [log](https://drive.google.com/file/d/136wx-lW16eI4ygjUiWYq44kaFYcNG5l8/view?usp=sharing)|
+|  **PPC**           | 58.70 | **59.12**| **59.04** |**55.39** | **49.51**| [model](https://drive.google.com/file/d/1fZ9XK0ovlxivpyGn2-UHW6tSI6xtfE6D/view?usp=sharing) \| [log](https://drive.google.com/file/d/1jrz9QHhP0PtkLw_MFWudqRTBoon_YD7X/view?usp=sharing)|
 
 <!---
 
@@ -103,6 +153,15 @@ Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increas
 
 <!-- Model weights will be updated soon. -->
 
+####  ImVoteNet
+Evaluated on SUN RGBD validation dataset.
+
+|   Method           |          |          |  AP@25    |          |          |       Download      |
+|-------------------:|:--------:|:--------:|:---------:|:--------:|:--------:|:-------------------:|
+|                    |  *Clean* |    *0.1* |   *0.05*  |  *0.02*  |   *0.01* |                     |
+|  Matched Filtering |   63.37   |   53.89  |   53.23   |  37.54   |   33.17  | [model](https://drive.google.com/file/d/1o_ADaNoi0Ws9a-2Lv7yFDQKHOakV-R0p/view?usp=sharing) \| [log](https://drive.google.com/file/d/1OkUKU9Tae6hF2kVSHcWVlU3YZH66P3gl/view?usp=sharing)|
+|  Thresholding      |   64.25   |   59.57  |   58.82   |  42.43   |   39.51  | [model](https://drive.google.com/file/d/1LznG5jQZf_fAqyQJa6WvuyEzAsX0x-8j/view?usp=sharing) \| [log](https://drive.google.com/file/d/12rsry3ZbKyFZy9oXyXBcThLYHzYRTzzd/view?usp=sharing)|
+|  **PPC**           | **64.36**| **61.51**| **60.19** |**53.21** | **46.84**| [model](https://drive.google.com/file/d/1AQ7r7k5UhbCmJpElhzA7NuKGJadN0n-E/view?usp=sharing) \| [log](https://drive.google.com/file/d/1Us8nX_4eYWnlkIJIhy9oswhQpxfHqBtK/view?usp=sharing)|
 
 
 
