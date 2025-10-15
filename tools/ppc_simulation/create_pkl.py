@@ -49,34 +49,6 @@ for sp in splits:
     with open(os.path.join(BASE, dataset + '_infos_' + sp + '_' + SBRstr + '.pkl'), 'wb') as f:
         pickle.dump(data, f)
 
-    ### Old code for gaussian noise testing
-    #    #np.savetxt(save_path, pcl_denoised.numpy(), fmt='%.8f')
-    #    #noise_max = [0.01, 0.1, 1.0]
-    #        #points = np.fromfile('../../data/sunrgbd/points_min2/0.3/argmax-filtering-sbr/5_50/'+ data_list[idx]['lidar_points']['lidar_path'], dtype=np.float32)
-    #        #points = np.fromfile(BASE+data_list[idx]['lidar_points']['lidar_path'], dtype=np.float32)
-    ##        points = points.reshape(-1,8)
-    ##        points3d = points[:,:3]
-    ##        for noise in noise_max:
-    ##            noise_std = random.uniform(0, noise)
-    ##            points3d = points3d + np.random.normal(size=points3d.shape) * noise_std
-    ##            pointsout = np.concatenate([points3d.astype(np.float32), points[:,3:]], axis=1)
-    ##            pointsout.tofile(OUTBASE + str(noise) + '/' + data_list[idx]['lidar_points']['lidar_path'])
-    ##        #np.savetxt('txt/points_clean8/' + sp + '/' + data_list[idx]['lidar_points']['lidar_path'][:-4]+'.xyz', points, fmt='%.8f')
-
-
-    # convert original point cloud to probabilistic point cloud
-    # by adding an extra feature of probability 1 to each point
-    for i in range(startdataidx, enddataidx+1):
-        fname = str(i).zfill(6) + '.bin'
-        print(fname)
-        points = np.fromfile(os.path.join(INBASEFOLDER, fname), dtype=np.float32)
-        points = points.reshape(-1,num_feats)
-        ones = np.ones((points.shape[0], 1), dtype=np.float32)
-        points = np.concatenate([points[:,:3], ones*1000., ones, points[:,3:]], 1)
-        if not os.path.exists(OUTBASEFOLDER):
-            os.makedirs(OUTBASEFOLDER)
-        points.tofile(os.path.join(OUTBASEFOLDER,fname))
-
 
 # Object Sampling transformation for KITTI uses a DB of object point clouds
 # converting them to probabilistic point clouds as well by adding 1 probability to each point

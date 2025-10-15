@@ -77,21 +77,25 @@ If you need to evaluate on all SBR levels, you can download all `sunrgbd_points_
 - Follow the original dataset [instructions](https://mmdetection3d.readthedocs.io/en/latest/user_guides/dataset_prepare.html) to prepare clean point cloud dataset.
 - Use `ppc_simulate.sh` to simulate 3D temporal waveforms. `matlab` is required.
 
-```bash
+  ```bash
   cd tools/ppc_simulation
   ./ppc_simulate.sh 0 10
-```
+  ```
 
 - Use `gen_points.sh` to create probabilistic point clouds from the 3D waveforms.
-```bash
-./gen_points.sh 0 10
-```
+  ```bash
+  ./gen_points.sh 0 10
+  ```
 
-- Use `create_pkl.py` to create label files for the whole dataset. It also creates a copy of clean point clouds to create ppc with probability 1.
-```bash
-python create_pkl.py
-```
-Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increase 10 to the size of the dataset to simulate all scenes.
+- Use `create_pkl.py` to create label files for the whole dataset. 
+  ```bash
+  python create_pkl.py
+  ```
+- Convert clean point clouds to ppc by adding probability 1 attribute.
+  ```bash
+  python create_clean_ppc.py
+  ```
+- Edit the `dataset` field in the scripts to simulate for `KITTI` dataset. Increase 10 to the size of the dataset to simulate all scenes.
 
 </details>
 
@@ -172,6 +176,4 @@ Evaluated on SUN RGBD validation dataset.
   year={2025}
 }
 ```
-
-<!-- ![demo image](resources/41supp.gif) -->
 
