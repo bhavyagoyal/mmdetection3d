@@ -169,11 +169,13 @@ Evaluated on SUN RGBD validation dataset.
 
 ### Citation
 ```
-@article{goyal2025robust,
-  title={Robust 3D Object Detection using Probabilistic Point Clouds from Single-Photon LiDARs},
-  author={Goyal, Bhavya and Gutierrez-Barragan, Felipe and Lin, Wei and Velten, Andreas and Li, Yin and Gupta, Mohit},
-  journal={arXiv preprint arXiv:2508.00169},
-  year={2025}
+@InProceedings{Goyal_2025_ICCV,
+    author    = {Goyal, Bhavya and Gutierrez-Barragan, Felipe and Lin, Wei and Velten, Andreas and Li, Yin and Gupta, Mohit},
+    title     = {Robust 3D Object Detection using Probabilistic Point Clouds from Single-Photon LiDARs},
+    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+    month     = {October},
+    year      = {2025},
+    pages     = {28417-28427}
 }
 ```
 
